@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Qualium in Kaido</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="《Qualium in Kaido》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+  "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.5.5/lib/three-vrm.module.min.js"
+} }
+</script>
+<style>
+:root {
+  --bg: #f4f1ea; --paper: #fbfaf6; --ink: #22262a; --mute: #6b6f73; --line: #d9d4c7; --accent: #2f6f8f; --aoi: #3d7f86;
+  --hdr: 50px; --sheet: 42vh;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 400 15px/1.6 "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; overflow: hidden; }
+b, strong { font-weight: 400; }
+button { font: inherit; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+a { color: var(--accent); }
+header { position: fixed; inset: 0 0 auto 0; height: var(--hdr); display: flex; align-items: center; gap: 8px; padding: 0 10px; background: var(--paper); border-bottom: 1px solid var(--line); z-index: 1000; }
+header h1 { font-size: 15px; font-weight: 500; margin: 0; white-space: nowrap; letter-spacing: .02em; }
+header h1 small { display: none; color: var(--mute); font-size: 12px; font-weight: 400; margin-left: 6px; }
+#hws { display: flex; gap: 4px; margin-left: auto; flex-wrap: nowrap; }
+#hws button { padding: 3px 7px; font-size: 13px; border-radius: 999px; white-space: nowrap; }
+#hws button[aria-pressed=true] { background: var(--hw, var(--accent)); color: #fff; border-color: transparent; }
+#about { padding: 4px 8px; font-size: 13px; }
+#map { position: fixed; top: var(--hdr); left: 0; right: 0; bottom: var(--sheet); z-index: 1; background: #e8e6df; }
+#aoiBox { position: fixed; top: calc(var(--hdr) + 8px); right: 8px; width: 92px; height: 132px; z-index: 900; border-radius: 12px; background: rgba(251,250,246,.55); border: 1px solid rgba(0,0,0,.08); overflow: hidden; cursor: pointer; }
+#aoiBox canvas { width: 100%; height: 100%; display: block; }
+#aoiBox .nm { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 11px; color: var(--mute); background: rgba(251,250,246,.75); }
+#aoiBox .fb { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-size: 22px; color: var(--aoi); }
+#aoiBox.fail .fb { display: flex; }
+#sheet { position: fixed; left: 0; right: 0; bottom: 0; height: var(--sheet); z-index: 950; background: var(--paper); border-top: 1px solid var(--line); display: flex; flex-direction: column; }
+#sheet.open { --sheet: 78vh; height: 78vh; }
+.prog { display: flex; align-items: center; gap: 6px; padding: 8px 10px 4px; }
+.prog .pt { flex: 1; min-width: 0; }
+.prog .pt .hw { font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prog .pt .nm { font-size: 17px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prog .pt .nm .n { font-size: 14px; font-weight: 400; color: var(--mute); margin-right: 6px; }
+.prog button { min-width: 40px; min-height: 40px; padding: 4px; }
+.bar { height: 4px; margin: 0 10px; background: #ebe7dc; border-radius: 2px; position: relative; overflow: hidden; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--hw, var(--accent)); border-radius: 2px; transition: width .3s; }
+.bub { margin: 8px 10px 4px; padding: 8px 10px; border-radius: 10px; background: #eef4f3; border: 1px solid #d3e3e1; }
+.steps { display: flex; gap: 4px; font-size: 12px; margin-bottom: 2px; }
+.steps span { color: var(--mute); padding: 0 6px; border-radius: 999px; }
+.steps span.on { background: var(--aoi); color: #fff; }
+.bub p { margin: 2px 0 6px; }
+.bub .row { display: flex; gap: 6px; align-items: center; }
+.bub .row .sp { flex: 1; }
+.tiny { font-size: 12px; color: var(--mute); }
+.scroll { flex: 1; overflow-y: auto; padding: 0 10px 14px; -webkit-overflow-scrolling: touch; }
+.tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.tools button[aria-pressed=true] { background: var(--aoi); color: #fff; border-color: transparent; }
+#walk { display: none; margin: 6px 0; padding: 8px 10px; border-radius: 10px; border: 1px solid #e3d3a8; background: #fbf5e4; font-size: 14px; }
+#walk.on { display: block; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; margin: 8px 0; }
+.facts div { background: #f2efe7; border-radius: 8px; padding: 6px 8px; font-size: 13px; }
+.facts div span { display: block; font-size: 11px; color: var(--mute); }
+.layer h3 { font-size: 13px; font-weight: 500; margin: 12px 0 4px; color: var(--mute); letter-spacing: .05em; }
+.layer ul { margin: 0; padding-left: 0; list-style: none; }
+.layer li { margin: 0 0 6px; padding-left: 1.6em; text-indent: -1.6em; }
+.layer li .c { display: inline-block; width: 1.4em; text-indent: 0; color: var(--aoi); }
+.layer li .s { font-size: 12px; margin-left: 4px; }
+.prep { margin: 10px 0; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 8px; color: var(--mute); font-size: 14px; }
+.legend { font-size: 12px; color: var(--mute); margin-top: 10px; }
+.safety { font-size: 12px; color: #7a5a12; }
+#dlg { position: fixed; inset: 0; z-index: 2000; background: rgba(20,24,28,.45); display: none; align-items: center; justify-content: center; padding: 16px; }
+#dlg.on { display: flex; }
+#dlg .in { background: var(--paper); max-width: 520px; width: 100%; max-height: 86vh; overflow-y: auto; border-radius: 12px; padding: 16px; }
+#dlg h2 { font-size: 16px; font-weight: 500; margin: 0 0 8px; }
+#dlg p, #dlg li { font-size: 14px; }
+.lbl { background: rgba(251,250,246,.9); border: 1px solid var(--line); border-radius: 6px; padding: 0 4px; font-size: 12px; color: var(--ink); box-shadow: none; }
+.leaflet-tooltip.lbl:before { display: none; }
+.me { width: 16px; height: 16px; border-radius: 50%; background: #1f6fd1; border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(31,111,209,.35); }
+.toge { color: #5a4a2a; font-size: 14px; line-height: 14px; text-align: center; text-shadow: 0 0 2px #fff, 0 0 2px #fff; }
+@media (max-width: 420px) { #hws { gap: 3px; } #hws button { padding: 3px 6px; font-size: 12px; } header { gap: 5px; padding: 0 6px; } header h1 { font-size: 13px; } }
+@media (max-width: 340px) { header h1 { display: none; } }
+@media (min-width: 900px) {
+  :root { --sheet: 0px; }
+  header h1 small { display: inline; }
+  #map { left: 400px; bottom: 0; }
+  #sheet, #sheet.open { left: 0; right: auto; top: var(--hdr); bottom: 0; width: 400px; height: auto; border-top: 0; border-right: 1px solid var(--line); }
+  #openCard { display: none; }
+  #aoiBox { width: 170px; height: 250px; }
+  .prog .pt .nm { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Qualium in Kaido<small>関東の街道を歩く（試作）</small></h1>
+  <div id="hws" role="group" aria-label="街道をえらぶ"></div>
+  <button id="about" aria-label="この作品について">i</button>
+</header>
+<div id="map" role="application" aria-label="街道と宿場の地図"></div>
+<div id="aoiBox" title="碧（あおい）。押すと次の言葉へ"><div class="fb">碧</div><div class="nm">碧（AI）</div></div>
+<section id="sheet" aria-live="polite">
+  <div class="prog">
+    <button id="prev" aria-label="前の宿">◀</button>
+    <div class="pt"><div class="hw" id="pHw"></div><div class="nm" id="pNm"></div></div>
+    <button id="next" aria-label="次の宿">▶</button>
+  </div>
+  <div class="bar"><i id="pBar"></i></div>
+  <div class="bub">
+    <div class="steps" id="steps"><span>見る</span><span>碧の話</span><span>見直す</span></div>
+    <p id="say"></p>
+    <div class="row"><span class="sp tiny" id="sayNote"></span><button id="voice" hidden>声</button><button id="stepBtn">つぎへ</button></div>
+  </div>
+  <div class="scroll" id="scroll">
+    <div class="tools">
+      <button id="openCard" aria-expanded="false">札をひらく</button>
+      <button id="walkBtn" aria-pressed="false">現地で歩く（GPS）</button>
+      <button id="here">ここに来た</button>
+    </div>
+    <div id="walk"></div>
+    <div id="card"></div>
+  </div>
+</section>
+<div id="dlg" role="dialog" aria-modal="true"><div class="in" id="dlgIn"></div></div>
+
+<script type="module">
+const $ = s => document.querySelector(s);
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const [K, RT] = await Promise.all([fetch("data/kaido.json").then(r => r.json()), fetch("data/routes.json").then(r => r.json())]);
+const ST = K.stations, HW = Object.fromEntries(K.highways.map(h => [h.id, h]));
+const store = (() => { try { const k = "ftw-kaido-1"; const v = JSON.parse(localStorage.getItem(k) || "{}"); return { v, save() { try { localStorage.setItem(k, JSON.stringify(this.v)); } catch (e) {} } }; } catch (e) { return { v: {}, save() {} }; } })();
+store.v.visits ||= {};
+
+// ---- 状態
+let hw = HW[store.v.hw] ? store.v.hw : "nakasendo", idx = 0, step = 0, intro = !store.v.seenIntro;
+const seq = () => HW[hw].seq;
+const lastNo = h => Math.max(...HW[h].seq.map(i => ST[i].no).flat().filter(n => typeof n === "number"));
+const noTxt = s => Array.isArray(s.no) ? `${s.no[0]}–${s.no[1]}` : s.no;
+const km = (h, id) => HW[h].km[id];
+
+// ---- 地図（国土地理院の淡色地図）
+const map = L.map("map", { zoomControl: false, attributionControl: true, preferCanvas: true }).setView([35.9, 139.6], 9);
+L.control.zoom({ position: "bottomright" }).addTo(map);
+L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", { maxZoom: 18, minZoom: 5, attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">出典：国土地理院</a>' }).addTo(map);
+map.attributionControl.setPrefix(false).addAttribution('道の線：<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>（ODbL）・点線＝直線');
+const lineG = L.layerGroup().addTo(map), dotG = L.layerGroup().addTo(map);
+let meMk = null, curMk = null;
+
+function draw() {
+  lineG.clearLayers(); dotG.clearLayers();
+  for (const h of K.highways) {
+    const on = h.id === hw;
+    for (const lg of RT.routes[h.id]) {
+      if (!on && h.shared_from && HW[h.shared_from].seq.includes(lg.to)) continue;
+      L.polyline(lg.coords, { color: h.color, weight: on ? 5 : 2.5, opacity: on ? .9 : .35, dashArray: lg.kind === "straight" ? "6 7" : null, interactive: false }).addTo(lineG);
+    }
+  }
+  const s = seq();
+  s.forEach((id, i) => {
+    const st = ST[id], card = !!K.cards[id], seen = store.v.visits[id]?.length;
+    const mk = st.kind === "toge"
+      ? L.marker(st.ll, { icon: L.divIcon({ className: "toge", html: "▲", iconSize: [14, 14] }) })
+      : L.circleMarker(st.ll, { radius: card ? 7 : 5, color: HW[hw].color, weight: card ? 3 : 2, fillColor: seen ? HW[hw].color : "#fff", fillOpacity: 1 });
+    mk.bindTooltip(st.name, { className: "lbl", direction: "top", offset: [0, -6] });
+    mk.on("click", () => select(i, true));
+    mk.addTo(dotG);
+  });
+  const st = ST[s[idx]];
+  curMk = L.circleMarker(st.ll, { radius: 13, color: HW[hw].color, weight: 2, fill: false, interactive: false }).addTo(dotG);
+  curMk.bindTooltip(st.name, { permanent: true, className: "lbl", direction: "right", offset: [12, 0] });
+}
+
+// ---- 表示
+function fmt(n, d = 1) { return n == null ? "—" : Number(n).toFixed(d); }
+function srcLinks(keys) {
+  return keys.map(k => { const s = K.sources[k]; return s ? `<a class="s" href="${s.permalink}" target="_blank" rel="noopener">${s.label}</a>` : `<span class="s">${k}</span>`; }).join(" ");
+}
+function lineOf(id) { return K.lines[id]; }
+function renderSay() {
+  const s = seq(), id = s[idx], ln = lineOf(id);
+  const steps = [...$("#steps").children];
+  if (intro) {
+    steps.forEach(e => e.classList.remove("on"));
+    $("#say").textContent = "碧（あおい）です。わたしは AI です。確かめた事実だけを話し、土地を診断したり、昔の人の気持ちを代わりに言ったりはしません。宿ごとに「見る → 碧の話 → 見直す」の順で話します。";
+    $("#sayNote").textContent = "歩きながら画面を見ないでください。";
+    $("#stepBtn").textContent = "はじめる"; talk(3); return;
+  }
+  steps.forEach((e, i) => e.classList.toggle("on", i === step));
+  $("#say").textContent = [ln.miru, ln.hanashi, ln.minaosu][step];
+  $("#sayNote").textContent = ln.auto ? "この宿のくわしい札は準備中（名簿と計算値だけで話しています）" : "";
+  $("#stepBtn").textContent = step < 2 ? "つぎへ" : "次の宿へ";
+  const au = K.audio?.[id]?.[["miru", "hanashi", "minaosu"][step]]; $("#voice").hidden = !au;
+  talk(Math.min(5, $("#say").textContent.length / 14));
+}
+function render() {
+  const h = HW[hw], s = seq(), id = s[idx], st = ST[id];
+  document.documentElement.style.setProperty("--hw", h.color);
+  [...$("#hws").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.h === hw));
+  const ln = lastNo(hw);
+  $("#pHw").textContent = `${h.name}　${h.range}`;
+  const lab = st.kind === "start" ? `<span class="n">0/${ln}</span>${st.name}（起点）` : st.kind === "toge" ? `<span class="n">峠</span>${st.name}` : st.kind === "end" ? `<span class="n">終点</span>${st.name}` : `<span class="n">${noTxt(st)}/${ln}</span>${st.name}`;
+  $("#pNm").innerHTML = lab;
+  $("#pBar").style.width = (100 * idx / (s.length - 1)) + "%";
+  $("#prev").disabled = idx === 0; $("#next").disabled = idx === s.length - 1;
+  renderSay(); renderCard(); draw();
+  location.replace("#" + hw + "/" + id);
+  store.v.hw = hw; store.v["i_" + hw] = idx; store.save();
+}
+function renderCard() {
+  const s = seq(), id = s[idx], st = ST[id], cd = K.cards[id], h = HW[hw];
+  const prev = idx > 0 ? ST[s[idx - 1]] : null, nxt = idx < s.length - 1 ? ST[s[idx + 1]] : null;
+  const legN = nxt ? RT.routes[hw].find(l => l.from === id) : null;
+  const dE = prev && st.elev != null && prev.elev != null ? st.elev - prev.elev : null;
+  const v = store.v.visits[id] || [];
+  let html = `<div class="facts">
+    <div><span>日本橋から（この街道で）</span>約 ${fmt(km(hw, id))} km</div>
+    <div><span>標高（計算値）</span>${st.elev == null ? "—" : "約 " + fmt(st.elev, 0) + " m"}</div>
+    <div><span>前の宿との高低差</span>${dE == null ? "—" : (Math.abs(dE) < .5 ? "±0 m" : (dE > 0 ? "+" : "−") + fmt(Math.abs(dE), 0) + " m")}</div>
+    <div><span>次の${nxt ? nxt.name : "宿"}まで</span>${legN ? "約 " + fmt(legN.km) + " km" + (legN.kind === "straight" ? "（直線）" : "") : "—"}</div>
+    ${st.ri ? `<div><span>前の宿からの里程</span>${st.ri}</div>` : ""}
+    <div><span>いまの場所</span>${st.pref}${st.muni}</div>
+    <div><span>ここに来た</span>${v.length ? v.length + " 回（最後 " + v[v.length - 1] + "）" : "まだ"}</div>
+  </div>`;
+  if (cd) {
+    for (const [k, t] of [["nature", "自然 ── 地形・水・木"], ["history", "歴史 ── 道と人の営み"], ["culture", "文化 ── 言葉と祈り"]]) {
+      if (!cd[k]?.length) continue;
+      html += `<div class="layer"><h3>${t}</h3><ul>${cd[k].map(it => `<li><span class="c" title="${{ "◎": "出典に書いてある", "○": "出典が「〜とされる・伝えられる」と書く", "△": "要確認" }[it.c]}">${it.c}</span>${it.t}${srcLinks(it.s)}</li>`).join("")}</ul></div>`;
+    }
+    if (cd.links) html += `<p>${cd.links.map(l => `<a href="${l.url}">${l.label}</a>`).join("・")}</p>`;
+  } else {
+    html += `<div class="prep">この宿の札（自然・歴史・文化）は準備中です。いま出しているのは、宿の名前・順番・場所・標高と道のりの計算値だけです。</div>`;
+  }
+  html += `<p class="legend">場所：${st.loc_how}${st.loc_prec === "◐" ? "（宿の中心とは限らない）" : ""}。${st.loc_note}<br>標高：国土地理院の標高 API（${st.elev_src || "—"}）から計算した値（◐）。道のり：OpenStreetMap の街道の線に沿って測った値、線の無い区間は直線（点線）。${h.ri_src ? "<br>" + h.ri_src : ""}<br>${h.total_note} ${h.outside}</p>
+  <p class="legend">印：◎ 出典に書いてある／○ 出典が「〜とされる・伝えられる」と書く／△ 要確認／◐ 計算した値・代表点</p>`;
+  $("#card").innerHTML = html;
+}
+
+// ---- 選ぶ・進む
+function select(i, fly) {
+  idx = Math.max(0, Math.min(seq().length - 1, i)); step = 0; if (intro) { intro = false; store.v.seenIntro = 1; }
+  render();
+  const st = ST[seq()[idx]];
+  if (fly) map.flyTo(st.ll, Math.max(map.getZoom(), 13), { duration: RM ? 0 : .8 });
+}
+function setHw(h) {
+  hw = h; idx = Math.min(store.v["i_" + h] || 0, seq().length - 1); step = 0; render();
+  map.fitBounds(L.latLngBounds(seq().map(i => ST[i].ll)), { padding: [30, 30], animate: !RM });
+}
+for (const h of K.highways) { const b = document.createElement("button"); b.textContent = h.short; b.dataset.h = h.id; b.setAttribute("aria-label", h.name); b.style.setProperty("--hw", h.color); b.onclick = () => setHw(h.id); $("#hws").append(b); }
+$("#prev").onclick = () => select(idx - 1, true);
+$("#next").onclick = () => select(idx + 1, true);
+$("#stepBtn").onclick = nextStep; $("#aoiBox").onclick = nextStep;
+function nextStep() {
+  if (intro) { intro = false; store.v.seenIntro = 1; store.save(); step = 0; renderSay(); return; }
+  if (step < 2) { step++; renderSay(); } else if (idx < seq().length - 1) select(idx + 1, true);
+}
+$("#voice").onclick = () => { const au = K.audio?.[seq()[idx]]?.[["miru", "hanashi", "minaosu"][step]]; if (au) new Audio(au).play().catch(() => {}); };
+$("#openCard").onclick = () => { const o = $("#sheet").classList.toggle("open"); $("#openCard").setAttribute("aria-expanded", o); $("#openCard").textContent = o ? "札をとじる" : "札をひらく"; setTimeout(() => map.invalidateSize(), 50); };
+$("#here").onclick = () => { const id = seq()[idx]; (store.v.visits[id] ||= []).push(new Date().toISOString().slice(0, 10)); store.save(); renderCard(); draw(); };
+
+// ---- 現地で歩く（GPS）。位置は保存しない・送らない
+let watch = null, autoDone = null;
+$("#walkBtn").onclick = () => {
+  if (watch != null) { navigator.geolocation.clearWatch(watch); watch = null; meMk?.remove(); meMk = null; $("#walk").classList.remove("on"); $("#walkBtn").setAttribute("aria-pressed", "false"); return; }
+  if (!("geolocation" in navigator) || !isSecureContext) { showWalk("この端末・この開き方では位置を使えません（https か localhost で開いてください）。家では ◀ ▶ で宿を一つずつ進めます。"); return; }
+  openDlg(`<h2>現地で歩く前に</h2><p>歩きながら画面を見ないでください。立ち止まって、道の端で見てください。車と自転車に気をつけてください。</p><p>位置はこの端末の中で「いちばん近い宿」を出すためだけに使い、保存も送信もしません。</p><p><button id="goWalk">わかった。位置を使う</button> <button id="noWalk">やめる</button></p>`);
+  $("#goWalk").onclick = () => { closeDlg(); startWalk(); }; $("#noWalk").onclick = closeDlg;
+};
+function showWalk(t) { $("#walk").innerHTML = t + `<div class="safety">歩きながら画面を見ないでください。</div>`; $("#walk").classList.add("on"); }
+function startWalk() {
+  $("#walkBtn").setAttribute("aria-pressed", "true"); showWalk("位置をさがしています…");
+  watch = navigator.geolocation.watchPosition(p => {
+    const me = [p.coords.latitude, p.coords.longitude];
+    if (!meMk) meMk = L.marker(me, { icon: L.divIcon({ className: "", html: '<div class="me"></div>', iconSize: [16, 16] }), interactive: false }).addTo(map); else meMk.setLatLng(me);
+    const s = seq(); let bi = 0, bd = 1e9;
+    s.forEach((id, i) => { const d = map.distance(me, ST[id].ll); if (d < bd) { bd = d; bi = i; } });
+    const n = ST[s[bi]], nx = bi < s.length - 1 ? ST[s[bi + 1]] : null;
+    const far = bd > 5000;
+    showWalk(far ? `いちばん近い${HW[hw].name}の宿は ${n.name}（約 ${(bd / 1000).toFixed(1)} km）。街道から離れているようです。` :
+      `いちばん近い宿：${n.name}（約 ${bd < 1000 ? Math.round(bd) + " m" : (bd / 1000).toFixed(1) + " km"}）${nx ? `<br>その次（日本橋から遠ざかる向き）：${nx.name}（${n.name}から約 ${fmt(RT.routes[hw].find(l => l.from === s[bi])?.km)} km）` : ""}<br><span class="tiny">位置の誤差：約 ${Math.round(p.coords.accuracy)} m</span>`);
+    if (bd < 250 && autoDone !== s[bi]) { autoDone = s[bi]; if (bi !== idx) select(bi, false); navigator.vibrate?.(120); }
+  }, e => showWalk("位置を取れませんでした（" + e.message + "）。家では ◀ ▶ で進めます。"), { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+}
+
+// ---- この作品について
+function openDlg(h) { $("#dlgIn").innerHTML = h; $("#dlg").classList.add("on"); }
+function closeDlg() { $("#dlg").classList.remove("on"); }
+$("#dlg").onclick = e => { if (e.target.id === "dlg") closeDlg(); };
+$("#about").onclick = () => {
+  const n = Object.keys(K.cards).length, all = Object.values(ST).length;
+  openDlg(`<h2>《Qualium in Kaido》について（試作）</h2>
+  <p>関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を一つにまとめ、宿場ごとに、地形と水（自然）に、道と人の営み（歴史）と、言葉と祈り（文化）を重ねて歩くための作品です。Feel site シリーズの一つ。</p>
+  <p>碧（あおい）は AI です。用意した言葉だけを話し、会話を保存しません。土地を診断せず、確かめていないことは言いません。</p>
+  <p>くわしい札は ${n} か所。ほかの宿（全 ${all} 点のうち残り）は準備中で、名前・順番・場所・標高と道のりの計算値だけを出しています。</p>
+  <ul>
+  <li>地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院 地理院タイル（淡色地図）</a>。標高：国土地理院 標高 API。場所の確かめ：国土地理院 住所検索・逆ジオコーダ</li>
+  <li>道の線：© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>（ODbL）の街道の relation。線の無い区間（日光街道の古河より先・奥州街道）は宿を直線でつないだもの（点線）</li>
+  <li>宿場の名簿・座標・事実：Wikipedia の各記事（版の番号つきでリンク）。CC BY-SA の文章は写さず、事実だけを短く書き直した</li>
+  <li>碧の 3D：mitsulab（VRM・白磁 案A）。表示に three.js・<a href="https://github.com/pixiv/three-vrm" target="_blank" rel="noopener">three-vrm</a>・Leaflet</li>
+  <li>「ここに来た」の記録は、この端末の中（localStorage）だけ</li>
+  </ul>
+  <p><button onclick="document.getElementById('dlg').classList.remove('on')">とじる</button></p>`);
+};
+
+// ---- 碧（白磁 案A・軽い版 web/aoi.vrm）。読めなくても作品は進む
+let talkUntil = 0, vrm = null;
+function talk(sec) { talkUntil = performance.now() + sec * 1000; }
+(async () => {
+  try {
+    const THREE = await import("three"), { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
+    const box = $("#aoiBox"), r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    r.setPixelRatio(Math.min(2, devicePixelRatio)); box.prepend(r.domElement);
+    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(24, 1, .1, 20);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xb9b2a0, 1.6)); const dl = new THREE.DirectionalLight(0xffffff, 1.4); dl.position.set(1, 2, 2); scene.add(dl);
+    const size = () => { const w = box.clientWidth, h = box.clientHeight; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); };
+    size(); addEventListener("resize", size);
+    const [buf, V, { MeshoptDecoder }] = await Promise.all([fetch("web/aoi.vrm").then(x => { if (!x.ok) throw new Error("HTTP " + x.status); return x.arrayBuffer(); }), import("@pixiv/three-vrm"), import("three/addons/libs/meshopt_decoder.module.js")]);
+    const ld = new GLTFLoader(); ld.setMeshoptDecoder(MeshoptDecoder); ld.register(p => new V.VRMLoaderPlugin(p));
+    const g = await ld.parseAsync(buf, ""), v = g.userData.vrm; V.VRMUtils.removeUnnecessaryVertices(g.scene); V.VRMUtils.rotateVRM0(v);
+    v.scene.traverse(o => o.frustumCulled = false); scene.add(v.scene); vrm = v;
+    const N = n => v.humanoid.getNormalizedBoneNode(n), set = (n, x, y, z) => { const b = N(n); if (b) b.rotation.set(x, y, z); };
+    /* （腕の休め＝aoi_pose.js の写し。前腕 Y は左が負・右が正＝肘が前へ曲がる） */ set("leftUpperArm", -.12, 0, -1.28); set("rightUpperArm", -.12, 0, 1.28); set("leftLowerArm", 0, -.28, 0); set("rightLowerArm", 0, .28, 0);
+    v.update(0); v.scene.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(v.scene), hgt = b.max.y - b.min.y, sc = hgt > .5 ? 1.62 / hgt : 1;
+    v.scene.scale.setScalar(sc); v.scene.position.y = -b.min.y * sc;
+    cam.position.set(0, 1.28, 2.6); cam.lookAt(0, 1.12, 0);
+    if (v.lookAt) v.lookAt.target = cam;
+    const clk = new THREE.Clock();
+    r.setAnimationLoop(() => {
+      const dt = Math.min(.05, clk.getDelta()), t = clk.elapsedTime, br = RM ? 0 : Math.sin(t * 2 * Math.PI / 4.6);
+      set("chest", -.012 * br, 0, 0); set("head", 0, RM ? 0 : .06 * Math.sin(t * .7), 0);
+      let bv = 0; if (!RM) { const u = t % 4.3; bv = u < .09 ? u / .09 : u < .12 ? 1 : u < .26 ? 1 - (u - .12) / .14 : 0; }
+      const em = v.expressionManager; em?.setValue("blink", bv);
+      em?.setValue("aa", !RM && performance.now() < talkUntil ? .35 + .35 * Math.abs(Math.sin(t * 11)) : 0);
+      v.update(dt); r.render(scene, cam);
+    });
+  } catch (e) { $("#aoiBox").classList.add("fail"); console.warn("碧の姿を読めませんでした（言葉は下に出します）：", e?.message ?? e); }
+})();
+
+// ---- はじめ
+const m = location.hash.match(/^#(\w+)\/(\w+)$/);
+if (m && HW[m[1]] && HW[m[1]].seq.includes(m[2])) { hw = m[1]; idx = HW[hw].seq.indexOf(m[2]); render(); map.setView(ST[m[2]].ll, 13); }
+else setHw(hw);
+window.__kaido = { select, setHw, state: () => ({ hw, idx, step, id: seq()[idx], aoi: !!vrm, aoiFail: $("#aoiBox").classList.contains("fail") }) };
+</script>
+</body>
+</html>
