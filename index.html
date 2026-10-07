@@ -194,7 +194,7 @@ function renderSay() {
   }
   steps.forEach((e, i) => e.classList.toggle("on", i === step));
   $("#say").textContent = [ln.miru, ln.hanashi, ln.minaosu][step];
-  $("#sayNote").textContent = ln.auto ? "この宿のくわしい札は準備中（名簿と計算値だけで話しています）" : "";
+  $("#sayNote").textContent = ln.auto ? "この宿は、名簿と計算値で話しています" : "";
   $("#stepBtn").textContent = step < 2 ? "つぎへ" : "次の宿へ";
   const au = K.audio?.[id]?.[["miru", "hanashi", "minaosu"][step]]; $("#voice").hidden = !au;
   talk(Math.min(5, $("#say").textContent.length / 14));
@@ -235,7 +235,7 @@ function renderCard() {
     }
     if (cd.links) html += `<p>${cd.links.map(l => `<a href="${l.url}">${l.label}</a>`).join("・")}</p>`;
   } else {
-    html += `<div class="prep">この宿の札（自然・歴史・文化）は準備中です。いま出しているのは、宿の名前・順番・場所・標高と道のりの計算値だけです。</div>`;
+    html += `<div class="prep">この宿は、名前・順番・場所・標高と、道のりの計算値で見ています。</div>`;
   }
   html += `<p class="legend">場所：${st.loc_how}${st.loc_prec === "◐" ? "（宿の中心とは限らない）" : ""}。${st.loc_note}<br>標高：国土地理院の標高 API（${st.elev_src || "—"}）から計算した値（◐）。道のり：OpenStreetMap の街道の線に沿って測った値、線の無い区間は直線（点線）。${h.ri_src ? "<br>" + h.ri_src : ""}<br>${h.total_note} ${h.outside}</p>
   <p class="legend">印：◎ 出典に書いてある／○ 出典が「〜とされる・伝えられる」と書く／△ 要確認／◐ 計算した値・代表点</p>`;
@@ -298,7 +298,7 @@ $("#about").onclick = () => {
   openDlg(`<h2>《森羅道中 街道》について（試作）</h2>
   <p>関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を一つにまとめ、宿場ごとに、地形と水（自然）に、道と人の営み（歴史）と、言葉と祈り（文化）を重ねて歩くための作品です。Feel site シリーズの一つ。</p>
   <p>碧（あおい）は AI です。用意した言葉だけを話し、会話を保存しません。土地を診断せず、確かめていないことは言いません。</p>
-  <p>くわしい札は ${n} か所。ほかの宿（全 ${all} 点のうち残り）は準備中で、名前・順番・場所・標高と道のりの計算値だけを出しています。</p>
+  <p>くわしい札は ${n} か所。ほかの宿（全 ${all} 点のうち残り）は、名前・順番・場所・標高と、道のりの計算値で見ています。</p>
   <ul>
   <li>地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院 地理院タイル（淡色地図）</a>。標高：国土地理院 標高 API。場所の確かめ：国土地理院 住所検索・逆ジオコーダ</li>
   <li>道の線：© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>（ODbL）の街道の relation。線の無い区間（日光街道の古河より先・奥州街道）は宿を直線でつないだもの（点線）</li>
