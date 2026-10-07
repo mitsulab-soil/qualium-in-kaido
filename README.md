@@ -1,4 +1,4 @@
-# Aoi Walk 街道（Aoi Walk: Kaido）── 関東の街道を歩く（試作）
+# 森羅道中 街道（Aoi Walk: Kaido）── 関東の街道を歩く（試作）
 
 > 2026-10-05 に名前を改めました（旧名《Qualium in Kaido》）。Qualium は、この作品の考え方の名前として使います。
 

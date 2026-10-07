@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Aoi Walk 街道</title>
+<title>森羅道中 街道</title>
 <link rel="icon" href="data:,">
-<meta name="description" content="《Aoi Walk 街道》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
-<meta property="og:title" content="Aoi Walk 街道（Aoi Walk: Kaido）">
-<meta property="og:description" content="《Aoi Walk 街道》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
+<meta name="description" content="《森羅道中 街道》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
+<meta property="og:title" content="森羅道中 街道（Aoi Walk: Kaido）">
+<meta property="og:description" content="《森羅道中 街道》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script type="importmap">
@@ -100,7 +100,7 @@ header h1 small { display: none; color: var(--mute); font-size: 12px; font-weigh
 </head>
 <body>
 <header>
-  <h1>Aoi Walk 街道<small>関東の街道を歩く（試作）</small></h1>
+  <h1>森羅道中 街道<small>関東の街道を歩く（試作）</small></h1>
   <div id="hws" role="group" aria-label="街道をえらぶ"></div>
   <button id="about" aria-label="この作品について">i</button>
 </header>
@@ -295,7 +295,7 @@ function closeDlg() { $("#dlg").classList.remove("on"); }
 $("#dlg").onclick = e => { if (e.target.id === "dlg") closeDlg(); };
 $("#about").onclick = () => {
   const n = Object.keys(K.cards).length, all = Object.values(ST).length;
-  openDlg(`<h2>《Aoi Walk 街道》について（試作）</h2>
+  openDlg(`<h2>《森羅道中 街道》について（試作）</h2>
   <p>関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を一つにまとめ、宿場ごとに、地形と水（自然）に、道と人の営み（歴史）と、言葉と祈り（文化）を重ねて歩くための作品です。Feel site シリーズの一つ。</p>
   <p>碧（あおい）は AI です。用意した言葉だけを話し、会話を保存しません。土地を診断せず、確かめていないことは言いません。</p>
   <p>くわしい札は ${n} か所。ほかの宿（全 ${all} 点のうち残り）は準備中で、名前・順番・場所・標高と道のりの計算値だけを出しています。</p>
