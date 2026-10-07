@@ -296,20 +296,20 @@ $("#dlg").onclick = e => { if (e.target.id === "dlg") closeDlg(); };
 $("#about").onclick = () => {
   const n = Object.keys(K.cards).length, all = Object.values(ST).length;
   openDlg(`<h2>《森羅道中 街道》について（試作）</h2>
-  <p>関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を一つにまとめ、宿場ごとに、地形と水（自然）に、道と人の営み（歴史）と、言葉と祈り（文化）を重ねて歩くための作品です。Feel site シリーズの一つ。</p>
+  <p>関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を一つにまとめ、宿場ごとに、地形と水（自然）に、道と人の営み（歴史）と、言葉と祈り（文化）を重ねて歩くための作品です。森羅道中の一作。</p>
   <p>碧（あおい）は AI です。用意した言葉だけを話し、会話を保存しません。土地を診断せず、確かめていないことは言いません。</p>
   <p>くわしい札は ${n} か所。ほかの宿（全 ${all} 点のうち残り）は、名前・順番・場所・標高と、道のりの計算値で見ています。</p>
   <ul>
   <li>地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院 地理院タイル（淡色地図）</a>。標高：国土地理院 標高 API。場所の確かめ：国土地理院 住所検索・逆ジオコーダ</li>
   <li>道の線：© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>（ODbL）の街道の relation。線の無い区間（日光街道の古河より先・奥州街道）は宿を直線でつないだもの（点線）</li>
   <li>宿場の名簿・座標・事実：Wikipedia の各記事（版の番号つきでリンク）。CC BY-SA の文章は写さず、事実だけを短く書き直した</li>
-  <li>碧の 3D：mitsulab（VRM・白磁 案A）。表示に three.js・<a href="https://github.com/pixiv/three-vrm" target="_blank" rel="noopener">three-vrm</a>・Leaflet</li>
+  <li>碧の 3D：mitsulab（VRM・翠）。表示に three.js・<a href="https://github.com/pixiv/three-vrm" target="_blank" rel="noopener">three-vrm</a>・Leaflet</li>
   <li>「ここに来た」の記録は、この端末の中（localStorage）だけ</li>
   </ul>
   <p><button onclick="document.getElementById('dlg').classList.remove('on')">とじる</button></p>`);
 };
 
-// ---- 碧（白磁 案A・軽い版 web/aoi.vrm）。読めなくても作品は進む
+// ---- 碧（翠・軽い版 web/aoi.vrm）。読めなくても作品は進む
 let talkUntil = 0, vrm = null;
 function talk(sec) { talkUntil = performance.now() + sec * 1000; }
 (async () => {
