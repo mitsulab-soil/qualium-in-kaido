@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>森羅道中 街道</title>
 <link rel="icon" href="data:,">
+<meta name="tdm-reservation" content="1">
 <meta name="description" content="《森羅道中 街道》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
 <meta property="og:title" content="森羅道中 街道（Aoi Walk: Kaido）">
 <meta property="og:description" content="《森羅道中 街道》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
@@ -34,7 +35,8 @@ header h1 small { display: none; color: var(--mute); font-size: 12px; font-weigh
 #hws { display: flex; gap: 4px; margin-left: auto; flex-wrap: nowrap; }
 #hws button { padding: 3px 7px; font-size: 13px; border-radius: 999px; white-space: nowrap; }
 #hws button[aria-pressed=true] { background: var(--hw, var(--accent)); color: #fff; border-color: transparent; }
-#about { padding: 4px 8px; font-size: 13px; }
+#about { padding: 4px 8px; font-size: 14px; min-width: 32px; min-height: 32px; }
+#sayNote, #walk .safety { font-size: 14px !important; }   /* 11 人の検証 P2：安全の一文は本文の大きさで */
 #map { position: fixed; top: var(--hdr); left: 0; right: 0; bottom: var(--sheet); z-index: 1; background: #e8e6df; }
 #aoiBox { position: fixed; top: calc(var(--hdr) + 8px); right: 8px; width: 92px; height: 132px; z-index: 900; border-radius: 12px; background: rgba(251,250,246,.55); border: 1px solid rgba(0,0,0,.08); overflow: hidden; cursor: pointer; }
 #aoiBox canvas { width: 100%; height: 100%; display: block; }
@@ -303,13 +305,16 @@ $("#about").onclick = () => {
   <li>地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院 地理院タイル（淡色地図）</a>。標高：国土地理院 標高 API。場所の確かめ：国土地理院 住所検索・逆ジオコーダ</li>
   <li>道の線：© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>（ODbL）の街道の relation。線の無い区間（日光街道の古河より先・奥州街道）は宿を直線でつないだもの（点線）</li>
   <li>宿場の名簿・座標・事実：Wikipedia の各記事（版の番号つきでリンク）。CC BY-SA の文章は写さず、事実だけを短く書き直した</li>
-  <li>碧の 3D：mitsulab（VRM・翠）。表示に three.js・<a href="https://github.com/pixiv/three-vrm" target="_blank" rel="noopener">three-vrm</a>・Leaflet</li>
+  <li>碧の 3D：mitsulab（VRM・碧〈現行のデザイン〉）。表示に three.js・<a href="https://github.com/pixiv/three-vrm" target="_blank" rel="noopener">three-vrm</a>・Leaflet</li>
   <li>「ここに来た」の記録は、この端末の中（localStorage）だけ</li>
   </ul>
+  <p>つくった人：mitsulab（<a href="https://mitsulab.jp" target="_blank" rel="noopener">mitsulab.jp</a>）／<a href="mailto:official@mitsulab.jp">official@mitsulab.jp</a></p>
+  <p style="font-size:12.5px" lang="ja">© 2026 mitsulab. All rights reserved. この作品の文章・画像・音声・3D・プログラムの著作権は、別に示した他者の素材を除き mitsulab にあります。無断の複製・転載・改変と、AI の学習・生成への利用はお断りします（テキスト・データマイニングの権利を留保します）。 <a href="https://mitsulab.jp/terms/#ai" target="_blank" rel="noopener">利用規約</a></p>
+  <p style="font-size:12.5px" lang="en">© 2026 mitsulab. All rights reserved. Copyright in the text, images, audio, 3D and software of this work belongs to mitsulab, except third-party materials credited separately. Copying, reposting or modifying them without permission, and using them for AI training or generation, are not permitted. Text and data mining rights are reserved. <a href="https://mitsulab.jp/terms/#ai-en" target="_blank" rel="noopener">Terms</a></p>
   <p><button onclick="document.getElementById('dlg').classList.remove('on')">とじる</button></p>`);
 };
 
-// ---- 碧（翠・軽い版 web/aoi.vrm）。読めなくても作品は進む
+// ---- 碧（現行のデザイン・軽い版 web/aoi.vrm）。読めなくても作品は進む
 let talkUntil = 0, vrm = null;
 function talk(sec) { talkUntil = performance.now() + sec * 1000; }
 (async () => {

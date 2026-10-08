@@ -31,3 +31,11 @@
 - 碧の 3D モデル（`web/aoi.vrm`）は、このアプリで碧を表示するためにだけ置いている。**作者（mitsulab）のみ利用・再配布しない・改変しない**の条件（VRM のメタ情報）。取り出して使わないでください。
 
 作：mitsulab　https://mitsulab.jp
+
+## 著作権 ／ Copyright
+
+© 2026 mitsulab. All rights reserved. この作品の文章・画像・音声・3D・プログラムの著作権は、別に示した他者の素材を除き mitsulab にあります。無断の複製・転載・改変と、AI の学習・生成への利用はお断りします（テキスト・データマイニングの権利を留保します）。[利用規約](https://mitsulab.jp/terms/#ai)
+
+© 2026 mitsulab. All rights reserved. Copyright in the text, images, audio, 3D and software of this work belongs to mitsulab, except third-party materials credited separately. Copying, reposting or modifying them without permission, and using them for AI training or generation, are not permitted. Text and data mining rights are reserved. [Terms](https://mitsulab.jp/terms/#ai-en)
+
+他者の素材（CC BY・ODbL・CC0・VOICEVOX など）は、それぞれの条件に従います。
