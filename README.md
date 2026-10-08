@@ -32,6 +32,10 @@
 
 作：mitsulab　https://mitsulab.jp
 
+## 碧の声
+
+碧の声：VOICEVOX:冥鳴ひまり（AI の合成音声。[VOICEVOX](https://voicevox.hiroshiba.jp/)）。宿場の名・人の名・地名は、自治体の公式や辞典で読みを確かめた文だけを声にしています。声は押したときだけ鳴ります。
+
 ## 著作権 ／ Copyright
 
 © 2026 mitsulab. All rights reserved. この作品の文章・画像・音声・3D・プログラムの著作権は、別に示した他者の素材を除き mitsulab にあります。無断の複製・転載・改変と、AI の学習・生成への利用はお断りします（テキスト・データマイニングの権利を留保します）。[利用規約](https://mitsulab.jp/terms/#ai)

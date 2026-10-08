@@ -185,6 +185,39 @@ function srcLinks(keys) {
   return keys.map(k => { const s = K.sources[k]; return s ? `<a class="s" href="${s.permalink}" target="_blank" rel="noopener">${s.label}</a>` : `<span class="s">${k}</span>`; }).join(" ");
 }
 function lineOf(id) { return K.lines[id]; }
+/* 2026-10-08（氷川道中の作法にそろえる）：碧の話は短く（かっこの中を外し、二文まで）。声があれば、字幕は声が鳴りはじめてから、息つぎの時刻に合わせて文ごとに替える。声は押したときだけ */
+function speechOf(t) {
+  const u = String(t).replace(/（[^）]*）/g, "").replace(/\s+/g, " ").trim();
+  const ss = u.split(/(?<=[。？！])/).map(x => x.trim()).filter(Boolean); let out = "", n = 0;
+  for (const x of ss) { if (n >= 2 || (n && out.length + x.length > 72)) break; out += x; n++; }
+  return out || u;
+}
+const VOICE = K.voice || {}, AU = new Audio(); AU.preload = "auto"; let subI = null, gest = false, sndOn = (() => { try { return localStorage.getItem("ftw-kaido-snd") !== "0"; } catch { return true; } })();
+addEventListener("pointerdown", () => { gest = true; }, { capture: true }); addEventListener("keydown", () => { gest = true; }, { capture: true });
+const SUBLOG = [];
+function subPlan(t, v) {
+  const cs = t.split(/(?<=[。？！])/).filter(Boolean), n = t.length, dur = v.dur, pz = v.pz || [];
+  const pu = []; for (let i = 0; i < n - 1; i++) if ("、。？！".includes(t[i])) pu.push(i);
+  const ok = pz.length === pu.length, A = [[0, .1]]; if (ok) pu.forEach((i, k) => { A.push([i + .999, pz[k][0]]); A.push([i + 1, pz[k][1]]); }); A.push([n, Math.max(.2, dur - .18)]);
+  const at = c => { for (let k = 1; k < A.length; k++) if (c <= A[k][0]) { const [a, ta] = A[k - 1], [b, tb] = A[k]; return ta + (tb - ta) * (b > a ? (c - a) / (b - a) : 1); } return dur; };
+  let c0 = 0; return cs.map(ch => { const st = at(c0); c0 += ch.length; return { ch, t: st }; });
+}
+function sayV(t, key) {
+  clearInterval(subI); try { AU.pause(); } catch {}
+  const v = VOICE[key];
+  if (!v || v.t !== t || !sndOn || !gest) { $("#say").textContent = t; return; }
+  const P = subPlan(t, v); let i = -1;
+  const show = k => { if (k === i) return; i = k; $("#say").textContent = P[k].ch; if (SUBLOG.length < 300) SUBLOG.push({ key, k, ct: +AU.currentTime.toFixed(3), plan: +P[k].t.toFixed(3) }); };
+  $("#say").textContent = ""; AU.src = v.f; try { AU.currentTime = 0; } catch {}
+  const tick = () => { const ct = AU.currentTime; let k = 0; while (k + 1 < P.length && P[k + 1].t <= ct + .03) k++; show(k); };
+  subI = setInterval(() => { if (!AU.paused && AU.currentTime > 0) tick(); if (AU.ended) { clearInterval(subI); $("#say").textContent = t; } }, 40);
+  AU.onerror = () => { clearInterval(subI); $("#say").textContent = t; };
+  AU.play().catch(() => { clearInterval(subI); $("#say").textContent = t; });
+}
+function setSnd(on) { sndOn = on; try { localStorage.setItem("ftw-kaido-snd", on ? "1" : "0"); } catch {} const b = $("#voice"); b.hidden = !Object.keys(VOICE).length; b.textContent = on ? "声 あり" : "声 なし"; b.setAttribute("aria-pressed", String(on)); if (!on) { clearInterval(subI); try { AU.pause(); } catch {} } }
+/* 声の書き出し用（画面の操作には使わない） */
+window.__kdSays = () => { const out = []; for (const [id, ln] of Object.entries(K.lines)) [ln.miru, ln.hanashi, ln.minaosu].forEach((t, i) => { if (t) out.push({ key: `${id}_${i}`, t: speechOf(t) }); }); return out; };
+window.__kd = { SUBLOG, VOICE };
 function renderSay() {
   const s = seq(), id = s[idx], ln = lineOf(id);
   const steps = [...$("#steps").children];
@@ -195,10 +228,9 @@ function renderSay() {
     $("#stepBtn").textContent = "はじめる"; talk(3); return;
   }
   steps.forEach((e, i) => e.classList.toggle("on", i === step));
-  $("#say").textContent = [ln.miru, ln.hanashi, ln.minaosu][step];
+  sayV(speechOf([ln.miru, ln.hanashi, ln.minaosu][step]), `${id}_${step}`);
   $("#sayNote").textContent = ln.auto ? "この宿は、名簿と計算値で話しています" : "";
   $("#stepBtn").textContent = step < 2 ? "つぎへ" : "次の宿へ";
-  const au = K.audio?.[id]?.[["miru", "hanashi", "minaosu"][step]]; $("#voice").hidden = !au;
   talk(Math.min(5, $("#say").textContent.length / 14));
 }
 function render() {
@@ -263,7 +295,7 @@ function nextStep() {
   if (intro) { intro = false; store.v.seenIntro = 1; store.save(); step = 0; renderSay(); return; }
   if (step < 2) { step++; renderSay(); } else if (idx < seq().length - 1) select(idx + 1, true);
 }
-$("#voice").onclick = () => { const au = K.audio?.[seq()[idx]]?.[["miru", "hanashi", "minaosu"][step]]; if (au) new Audio(au).play().catch(() => {}); };
+$("#voice").onclick = e => { e.stopPropagation(); setSnd(!sndOn); }; setSnd(sndOn);
 $("#openCard").onclick = () => { const o = $("#sheet").classList.toggle("open"); $("#openCard").setAttribute("aria-expanded", o); $("#openCard").textContent = o ? "札をとじる" : "札をひらく"; setTimeout(() => map.invalidateSize(), 50); };
 $("#here").onclick = () => { const id = seq()[idx]; (store.v.visits[id] ||= []).push(new Date().toISOString().slice(0, 10)); store.save(); renderCard(); draw(); };
 
@@ -305,6 +337,7 @@ $("#about").onclick = () => {
   <li>地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院 地理院タイル（淡色地図）</a>。標高：国土地理院 標高 API。場所の確かめ：国土地理院 住所検索・逆ジオコーダ</li>
   <li>道の線：© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>（ODbL）の街道の relation。線の無い区間（日光街道の古河より先・奥州街道）は宿を直線でつないだもの（点線）</li>
   <li>宿場の名簿・座標・事実：Wikipedia の各記事（版の番号つきでリンク）。CC BY-SA の文章は写さず、事実だけを短く書き直した</li>
+  ${Object.keys(K.voice || {}).length ? `<li>碧の声：VOICEVOX:冥鳴ひまり（AI の合成音声）。宿場の名・人の名・地名は、公式や辞典で読みを確かめた文だけを声にしています。</li>` : ""}
   <li>碧の 3D：mitsulab（VRM・碧〈現行のデザイン〉）。表示に three.js・<a href="https://github.com/pixiv/three-vrm" target="_blank" rel="noopener">three-vrm</a>・Leaflet</li>
   <li>「ここに来た」の記録は、この端末の中（localStorage）だけ</li>
   </ul>
