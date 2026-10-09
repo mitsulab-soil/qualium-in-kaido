@@ -6,7 +6,7 @@
 <title>森羅道中 街道</title>
 <meta name="tdm-reservation" content="1">
 <meta name="description" content="《森羅道中 街道》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
-<meta property="og:title" content="森羅道中 街道（Aoi Walk: Kaido）">
+<meta property="og:title" content="森羅道中 街道（Kaido Dochu）">
 <meta property="og:description" content="《森羅道中 街道》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -105,6 +105,7 @@ header h1 small { display: none; color: var(--mute); font-size: 12px; font-weigh
 <meta name="theme-color" content="#03060f">
 </head>
 <body>
+<script src="loader/loader.js" data-title="森羅道中 街道" data-en="Kaido Dochu" data-icon="favicon/icon.svg" data-max="12000"></script>   <!-- mitsulab 共通の読み込み画面（01_経営/03_対外書類/12_ブランド/loader・2026-10-09） -->
 <header>
   <h1>森羅道中 街道<small>関東の街道を歩く（試作）</small></h1>
   <div id="hws" role="group" aria-label="街道をえらぶ"></div>
@@ -140,6 +141,7 @@ header h1 small { display: none; color: var(--mute); font-size: 12px; font-weigh
 const $ = s => document.querySelector(s);
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const [K, RT] = await Promise.all([fetch("data/kaido.json").then(r => r.json()), fetch("data/routes.json").then(r => r.json())]);
+window.MLLoader?.progress(.6);
 const ST = K.stations, HW = Object.fromEntries(K.highways.map(h => [h.id, h]));
 const store = (() => { try { const k = "ftw-kaido-1"; const v = JSON.parse(localStorage.getItem(k) || "{}"); return { v, save() { try { localStorage.setItem(k, JSON.stringify(this.v)); } catch (e) {} } }; } catch (e) { return { v: {}, save() {} }; } })();
 store.v.visits ||= {};
@@ -390,6 +392,7 @@ function talk(sec) { talkUntil = performance.now() + sec * 1000; }
 const m = location.hash.match(/^#(\w+)\/(\w+)$/);
 if (m && HW[m[1]] && HW[m[1]].seq.includes(m[2])) { hw = m[1]; idx = HW[hw].seq.indexOf(m[2]); render(); map.setView(ST[m[2]].ll, 13); }
 else setHw(hw);
+requestAnimationFrame(() => requestAnimationFrame(() => window.MLLoader?.done()));   // 地図と札が描けたら、読み込み画面を消す
 window.__kaido = { select, setHw, state: () => ({ hw, idx, step, id: seq()[idx], aoi: !!vrm, aoiFail: $("#aoiBox").classList.contains("fail") }) };
 </script>
 </body>
