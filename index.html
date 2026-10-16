@@ -1,399 +1,1057 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>街道幽玄</title>
-<meta name="tdm-reservation" content="1">
-<meta name="description" content="《街道幽玄》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
-<meta property="og:title" content="街道幽玄（Ghosts of Kaido）">
-<meta property="og:description" content="《街道幽玄》関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を、宿場ごとに、地形と水と歴史と文化を重ねて歩く。碧（あおい・AI）が案内する試作。">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<meta name="description" content="関東の五つの街道を、3D の地形で上から見て、宿を選び、碧（あおい）といっしょに歩く。">
+<meta property="og:title" content="街道幽玄">
+<meta property="og:description" content="関東の五つの街道を、3D の地形で上から見て、宿を選び、碧（あおい）といっしょに歩く。">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://cyberjapandata.gsi.go.jp" crossorigin>
 <script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
-  "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.5.5/lib/three-vrm.module.min.js"
-} }
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/", "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.5.5/lib/three-vrm.module.min.js" } }
 </script>
 <style>
-:root {
-  --bg: #f4f1ea; --paper: #fbfaf6; --ink: #22262a; --mute: #6b6f73; --line: #d9d4c7; --accent: #2f6f8f; --aoi: #3d7f86;
-  --hdr: 50px; --sheet: 42vh;
-}
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 400 15px/1.6 "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif; overflow: hidden; }
-b, strong { font-weight: 400; }
-button { font: inherit; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-a { color: var(--accent); }
-header { position: fixed; inset: 0 0 auto 0; height: var(--hdr); display: flex; align-items: center; gap: 8px; padding: 0 10px; background: var(--paper); border-bottom: 1px solid var(--line); z-index: 1000; }
-header h1 { font-size: 15px; font-weight: 500; margin: 0; white-space: nowrap; letter-spacing: .02em; }
-header h1 small { display: none; color: var(--mute); font-size: 12px; font-weight: 400; margin-left: 6px; }
-#hws { display: flex; gap: 4px; margin-left: auto; flex-wrap: nowrap; }
-#hws button { padding: 3px 7px; font-size: 13px; border-radius: 999px; white-space: nowrap; }
-#hws button[aria-pressed=true] { background: var(--hw, var(--accent)); color: #fff; border-color: transparent; }
-#about { padding: 4px 8px; font-size: 14px; min-width: 32px; min-height: 32px; }
-#sayNote, #walk .safety { font-size: 14px !important; }   /* 11 人の検証 P2：安全の一文は本文の大きさで */
-#map { position: fixed; top: var(--hdr); left: 0; right: 0; bottom: var(--sheet); z-index: 1; background: #e8e6df; }
-#aoiBox { position: fixed; top: calc(var(--hdr) + 8px); right: 8px; width: 92px; height: 132px; z-index: 900; border-radius: 12px; background: rgba(251,250,246,.55); border: 1px solid rgba(0,0,0,.08); overflow: hidden; cursor: pointer; }
-#aoiBox canvas { width: 100%; height: 100%; display: block; }
-#aoiBox .nm { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 11px; color: var(--mute); background: rgba(251,250,246,.75); }
-#aoiBox .fb { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-size: 22px; color: var(--aoi); }
-#aoiBox.fail .fb { display: flex; }
-#sheet { position: fixed; left: 0; right: 0; bottom: 0; height: var(--sheet); z-index: 950; background: var(--paper); border-top: 1px solid var(--line); display: flex; flex-direction: column; }
-#sheet.open { --sheet: 78vh; height: 78vh; }
-.prog { display: flex; align-items: center; gap: 6px; padding: 8px 10px 4px; }
-.prog .pt { flex: 1; min-width: 0; }
-.prog .pt .hw { font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.prog .pt .nm { font-size: 17px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.prog .pt .nm .n { font-size: 14px; font-weight: 400; color: var(--mute); margin-right: 6px; }
-.prog button { min-width: 40px; min-height: 40px; padding: 4px; }
-.bar { height: 4px; margin: 0 10px; background: #ebe7dc; border-radius: 2px; position: relative; overflow: hidden; }
-.bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--hw, var(--accent)); border-radius: 2px; transition: width .3s; }
-.bub { margin: 8px 10px 4px; padding: 8px 10px; border-radius: 10px; background: #eef4f3; border: 1px solid #d3e3e1; }
-.steps { display: flex; gap: 4px; font-size: 12px; margin-bottom: 2px; }
-.steps span { color: var(--mute); padding: 0 6px; border-radius: 999px; }
-.steps span.on { background: var(--aoi); color: #fff; }
-.bub p { margin: 2px 0 6px; }
-.bub .row { display: flex; gap: 6px; align-items: center; }
-.bub .row .sp { flex: 1; }
-.tiny { font-size: 12px; color: var(--mute); }
-.scroll { flex: 1; overflow-y: auto; padding: 0 10px 14px; -webkit-overflow-scrolling: touch; }
-.tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
-.tools button[aria-pressed=true] { background: var(--aoi); color: #fff; border-color: transparent; }
-#walk { display: none; margin: 6px 0; padding: 8px 10px; border-radius: 10px; border: 1px solid #e3d3a8; background: #fbf5e4; font-size: 14px; }
-#walk.on { display: block; }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; margin: 8px 0; }
-.facts div { background: #f2efe7; border-radius: 8px; padding: 6px 8px; font-size: 13px; }
-.facts div span { display: block; font-size: 11px; color: var(--mute); }
-.layer h3 { font-size: 13px; font-weight: 500; margin: 12px 0 4px; color: var(--mute); letter-spacing: .05em; }
-.layer ul { margin: 0; padding-left: 0; list-style: none; }
-.layer li { margin: 0 0 6px; padding-left: 1.6em; text-indent: -1.6em; }
-.layer li .c { display: inline-block; width: 1.4em; text-indent: 0; color: var(--aoi); }
-.layer li .s { font-size: 12px; margin-left: 4px; }
-.prep { margin: 10px 0; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 8px; color: var(--mute); font-size: 14px; }
-.legend { font-size: 12px; color: var(--mute); margin-top: 10px; }
-.safety { font-size: 12px; color: #7a5a12; }
-#dlg { position: fixed; inset: 0; z-index: 2000; background: rgba(20,24,28,.45); display: none; align-items: center; justify-content: center; padding: 16px; }
-#dlg.on { display: flex; }
-#dlg .in { background: var(--paper); max-width: 520px; width: 100%; max-height: 86vh; overflow-y: auto; border-radius: 12px; padding: 16px; }
-#dlg h2 { font-size: 16px; font-weight: 500; margin: 0 0 8px; }
-#dlg p, #dlg li { font-size: 14px; }
-.lbl { background: rgba(251,250,246,.9); border: 1px solid var(--line); border-radius: 6px; padding: 0 4px; font-size: 12px; color: var(--ink); box-shadow: none; }
-.leaflet-tooltip.lbl:before { display: none; }
-.me { width: 16px; height: 16px; border-radius: 50%; background: #1f6fd1; border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(31,111,209,.35); }
-.toge { color: #5a4a2a; font-size: 14px; line-height: 14px; text-align: center; text-shadow: 0 0 2px #fff, 0 0 2px #fff; }
-@media (max-width: 420px) { #hws { gap: 3px; } #hws button { padding: 3px 6px; font-size: 12px; } header { gap: 5px; padding: 0 6px; } header h1 { font-size: 13px; } }
-@media (max-width: 340px) { header h1 { display: none; } }
-@media (min-width: 900px) {
-  :root { --sheet: 0px; }
-  header h1 small { display: inline; }
-  #map { left: 400px; bottom: 0; }
-  #sheet, #sheet.open { left: 0; right: auto; top: var(--hdr); bottom: 0; width: 400px; height: auto; border-top: 0; border-right: 1px solid var(--line); }
-  #openCard { display: none; }
-  #aoiBox { width: 170px; height: 250px; }
-  .prog .pt .nm { font-size: 19px; }
-}
-@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+  /* Qualium の 3D 地形版（2026-10-05）。《Qualium in Hikawa》の作り（碧が斜め前を歩く・画面の文字は碧が話す文だけ・聞く話は一つ）にならう。
+     俯瞰の地形 → 地点を選ぶ → 道すじに沿って降りていく → 先に来ていた碧と、短い道を歩く */
+  :root { --ink:#1d2421; --sub:#5b6661; --line:rgba(40,60,52,.18); --panel:#fbfaf6; --ground:#f2efe7; --aoi:#2f7d78; --shadow:0 10px 30px rgba(20,40,34,.18);
+    --subbg:rgba(250,251,248,.9); --subink:#17201c; --sky:#cfdde3; --ui:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif; --title:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink:#e6ece8; --sub:#a7b3ad; --line:rgba(220,235,228,.18); --panel:#1b2220; --ground:#232b28; --aoi:#5fb3ab; --shadow:0 10px 30px rgba(0,0,0,.45); --subbg:rgba(22,29,26,.88); --subink:#e8efea; } }
+  :root[data-theme="dark"] { --ink:#e6ece8; --sub:#a7b3ad; --line:rgba(220,235,228,.18); --panel:#1b2220; --ground:#232b28; --aoi:#5fb3ab; --shadow:0 10px 30px rgba(0,0,0,.45); --subbg:rgba(22,29,26,.88); --subink:#e8efea; }
+  [hidden] { display:none !important; }
+  html, body { margin:0; height:100%; background:var(--sky); color:var(--ink); font-family:var(--ui); overflow:hidden; overscroll-behavior:none; -webkit-text-size-adjust:100%; }
+  body { touch-action:none; }
+  button { font:inherit; color:inherit; }
+  #c { position:fixed; inset:0; width:100%; height:100%; display:block; outline:none; }
+  .top { position:fixed; left:12px; right:12px; top:calc(env(safe-area-inset-top,0px) + 10px); display:flex; justify-content:space-between; align-items:flex-start; gap:8px; pointer-events:none; z-index:6; }
+  .top > * { pointer-events:auto; }
+  .lft { display:flex; gap:6px; align-items:center; min-width:0; }
+  .ib { min-width:44px; height:44px; border-radius:12px; border:1px solid var(--line); background:color-mix(in srgb, var(--panel) 86%, transparent); color:var(--ink); cursor:pointer; display:inline-grid; place-items:center; font-size:18px; padding:0 10px; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  .ib.txt { font-size:14px; }
+  .brand { font-family:var(--title); font-size:15px; letter-spacing:.04em; padding:5px 10px; border-radius:10px; background:color-mix(in srgb, var(--panel) 80%, transparent); border:1px solid var(--line); line-height:1.3; min-width:0; }
+  .brand small { display:block; font-family:var(--ui); font-size:11px; color:var(--sub); letter-spacing:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:52vw; }
+  .brand small:empty { display:none; }
+  #groups { position:fixed; left:12px; right:12px; top:calc(env(safe-area-inset-top,0px) + 62px); z-index:5; display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; pointer-events:auto; }
+  #groups[hidden] { display:none; }
+  #groups button { flex:none; min-height:36px; padding:0 14px; border-radius:999px; border:1px solid var(--line); background:color-mix(in srgb, var(--panel) 86%, transparent); font-size:14px; cursor:pointer; backdrop-filter:blur(6px); }
+  #groups button i { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; vertical-align:1px; }
+  /* 地点の印（3D の上に重ねる）。押すと、そこへ降りていく */
+  #marks { position:fixed; inset:0; pointer-events:none; z-index:4; overflow:hidden; }
+  .mk { position:absolute; left:0; top:0; pointer-events:auto; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px; border:0; background:none; padding:4px; min-width:44px; min-height:44px; color:#fff; font:inherit; -webkit-tap-highlight-color:transparent; will-change:transform; }
+  .mk .lb { font-size:12.5px; line-height:1.3; letter-spacing:.03em; padding:3px 9px; border-radius:999px; white-space:nowrap; background:rgba(18,30,26,.62); border:1px solid rgba(255,255,255,.55); box-shadow:0 2px 10px rgba(0,0,0,.25); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
+  .mk .lb b { font-weight:400; display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; vertical-align:0; }
+  .mk .pin { width:2px; height:14px; background:linear-gradient(rgba(255,255,255,.9), rgba(255,255,255,0)); }
+  .mk .dot { width:10px; height:10px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 6px rgba(0,0,0,.4); }
+  .mk.nolb .lb, .mk.nolb .pin { visibility:hidden; }
+  .mk:focus-visible .lb { outline:2px solid #fff; }
+  /* 下の字幕の帯：碧が話している文だけ（1〜2 行）。太字にしない */
+  #sub { position:fixed; left:12px; right:12px; bottom:calc(env(safe-area-inset-bottom,0px) + 10px); z-index:6; background:var(--subbg); color:var(--subink); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); padding:6px 8px 10px 14px; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); max-width:760px; margin:0 auto; }
+  #sub .hd { display:flex; align-items:center; gap:2px; }
+  #sub .who { white-space:nowrap; font-size:12px; color:var(--aoi); letter-spacing:.06em; margin-right:auto; }
+  #sub .ctl { white-space:nowrap; min-width:44px; height:44px; border-radius:10px; border:0; background:transparent; color:var(--sub); font-size:16px; cursor:pointer; padding:0 6px; }
+  #sub .ctl[hidden] { display:none; }
+  #sndBtn[aria-pressed=false] { text-decoration:line-through; }
+  #subT { margin:0; min-height:calc(2 * 1.6em); font-family:var(--title); font-size:16px; font-weight:400; line-height:1.6; letter-spacing:.02em; transition:opacity .25s; }
+  #subT.idle { opacity:0; }
+  #sub.rest { padding-top:0; padding-bottom:0; background:color-mix(in srgb, var(--subbg) 70%, transparent); }
+  #sub.rest #subT { display:none; }
+  #subT .st { font-family:var(--ui); font-size:13px; color:var(--sub); }
+  body.big #subT { font-size:19px; }
+  #endbar { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 70px); z-index:7; display:flex; gap:8px; }
+  #endbar[hidden] { display:none; }
+  #endbar button { min-height:48px; padding:0 18px; border-radius:14px; border:1px solid var(--line); background:var(--panel); box-shadow:var(--shadow); font-size:15px; cursor:pointer; white-space:nowrap; }
+  #endbar button.pri { background:var(--aoi); color:#fff; border-color:var(--aoi); }
+  /* はじめの画面 */
+  #start { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 14px); transform:translateX(-50%); z-index:7; width:min(520px, calc(100vw - 24px)); box-sizing:border-box; background:var(--panel); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); padding:14px 14px 10px; }
+  #start[hidden] { display:none; }
+  #start h1 { margin:0; font-family:var(--title); font-size:22px; letter-spacing:.04em; font-weight:600; }
+  #start p { margin:4px 0 10px; font-size:14px; line-height:1.6; color:var(--sub); }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chips button { min-height:44px; min-width:56px; padding:0 14px; border-radius:999px; border:1px solid var(--line); background:var(--ground); color:var(--ink); font-size:14px; cursor:pointer; }
+  .chips button[aria-checked=true] { background:var(--aoi); border-color:var(--aoi); color:#fff; }
+  .go { width:100%; min-height:50px; border-radius:14px; border:0; background:var(--aoi); color:#fff; font-size:16px; cursor:pointer; letter-spacing:.04em; margin-top:10px; }
+  .go2 { background:none; border:0; color:var(--sub); font-size:13px; margin-top:4px; cursor:pointer; text-decoration:underline; min-height:36px; width:100%; }
+  /* メニュー（聞く話・出典・クレジット・碧について） */
+  #menu { position:fixed; z-index:10; left:12px; top:calc(env(safe-area-inset-top,0px) + 62px); bottom:calc(env(safe-area-inset-bottom,0px) + 12px); width:min(400px, calc(100vw - 24px)); box-sizing:border-box; background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); overflow:auto; padding:6px 16px 18px; touch-action:pan-y; }
+  #menu[hidden] { display:none; }
+  #menu h2 { font-size:13px; letter-spacing:.08em; color:var(--aoi); margin:16px 0 6px; font-weight:500; }
+  #menu p, #menu li { font-size:13.5px; line-height:1.75; margin:0 0 6px; }
+  #menu ul { padding-left:1.1em; margin:0; }
+  #menu small { color:var(--sub); font-size:12px; }
+  #menu a { color:var(--aoi); word-break:break-all; }
+  #menu .mh { position:sticky; top:0; background:var(--panel); display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); }
+  #menu .mh b { font-weight:500; font-size:15px; }
+  #menu .row { display:flex; gap:6px; flex-wrap:wrap; }
+  #menu .row button { min-height:44px; padding:0 14px; border-radius:12px; border:1px solid var(--line); background:var(--ground); cursor:pointer; font-size:14px; }
+  #fade { position:fixed; inset:0; background:#0d1412; opacity:0; pointer-events:none; z-index:8; transition:opacity .35s ease; }
+  #fade.on { opacity:1; }
+  #toast { position:fixed; left:50%; transform:translateX(-50%); top:calc(env(safe-area-inset-top,0px) + 64px); z-index:9; background:var(--subbg); color:var(--subink); border:1px solid var(--line); border-radius:999px; padding:6px 14px; font-size:14px; pointer-events:none; opacity:0; white-space:nowrap; }
+  #toast.on { animation:toastA 1.8s ease forwards; }
+  @keyframes toastA { 0% { opacity:1; } 75% { opacity:1; } 100% { opacity:0; } }
+  #attr { position:fixed; right:6px; bottom:calc(env(safe-area-inset-bottom,0px) + 2px); z-index:3; font-size:9.5px; color:rgba(20,30,26,.75); background:rgba(255,255,255,.55); padding:0 5px; border-radius:4px; pointer-events:none; }
+  body.walk #attr, body.started #attr { bottom:auto; top:calc(env(safe-area-inset-top,0px) + 58px); }
+  @media (max-width: 380px) { #sub .ctl { padding:0 3px; min-width:40px; } #sub { padding-left:10px; } }
+  @media (min-width: 821px) { #sub { padding:8px 10px 12px 18px; } #subT { font-size:18px; } body.big #subT { font-size:21px; } }
+  @media (prefers-reduced-motion: reduce) { #fade, #subT { transition:none; } #toast.on { animation:none; opacity:1; } }
+/* 2026-10-16：幽玄シリーズ共通。景色を中央に残す。 */
+body:not(.started) #sub { display:none; }
+:root[data-theme="dark"]{--ink:#e7eee9;--sub:#a6bcb6;--panel:#101e20;--ground:#14292a;--aoi:#70c5b5;--subbg:rgba(9,23,25,.82);--subink:#e7eee9;--line:rgba(147,200,187,.25)}
+.top{left:24px;right:24px;top:calc(env(safe-area-inset-top,0px) + 20px)}
+.brand{background:rgba(9,23,25,.65);border:0;border-radius:0;padding:8px 14px;font-size:19px;letter-spacing:.13em;backdrop-filter:blur(12px)}
+.ib{border-radius:3px;background:rgba(9,23,25,.72)}
+#start{left:24px;bottom:32px;transform:none;width:min(430px,calc(100vw - 48px));padding:22px;border-radius:3px;background:rgba(9,23,25,.84);backdrop-filter:blur(16px)}
+#start h1{font-weight:400;font-size:26px;letter-spacing:.1em}#start p{line-height:1.8}
+#sub{border-radius:3px;background:rgba(9,23,25,.84);box-shadow:none}
+#start .chips button{border-radius:2px;background:transparent}#start .chips button[aria-checked=true]{background:rgba(112,197,181,.18);color:#ddf5ed}
+.go{border-radius:2px;background:#326f65;color:#f4fff9}.go2{color:#c4d8d0}
+#groups button,#menu .row button,#menu,#endbar button{border-radius:3px}
+.mk .lb{border-radius:2px;background:rgba(9,23,25,.8);border:1px solid rgba(140,220,197,.4)}
+#attr{color:#d3e5de;background:rgba(9,23,25,.7);font-size:10px}
+@media(max-width:600px){.top{left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 10px)}.brand{font-size:16px;letter-spacing:.04em;padding:7px 8px}#start{left:12px;bottom:18px;width:calc(100vw - 24px);padding:16px}#start h1{font-size:23px}#start p{font-size:13px}#groups{top:74px}#subT{font-size:15px}}
 </style>
-<link rel="icon" href="favicon/favicon.ico" sizes="any">
-<link rel="icon" href="favicon/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="favicon/apple-touch-icon.png">
-<link rel="manifest" href="favicon/manifest.webmanifest">
-<meta name="theme-color" content="#03060f">
 </head>
 <body>
-<script src="loader/loader.js" data-title="街道幽玄" data-en="Ghosts of Kaido" data-icon="favicon/icon.svg" data-max="12000"></script>   <!-- mitsulab 共通の読み込み画面（01_経営/03_対外書類/12_ブランド/loader・2026-10-09） -->
-<header>
-  <h1>街道幽玄<small>関東の街道を歩く（試作）</small></h1>
-  <div id="hws" role="group" aria-label="街道をえらぶ"></div>
-  <button id="about" aria-label="この作品について">i</button>
+<canvas id="c" tabindex="0" aria-label="3D の地形。ドラッグで動かし、ピンチやホイールで寄ったり離れたりします"></canvas>
+<div id="marks" aria-label="地点の印（押すと、そこへ降りていきます）"></div>
+<header class="top">
+  <div class="lft"><button class="ib" id="menuBtn" aria-label="メニュー（聞く話・出典・クレジット・碧について）" aria-expanded="false" aria-controls="menu">≡</button><div class="brand" id="brand">街道幽玄<small id="where"></small></div></div>
+  <button class="ib txt" id="upBtn" hidden aria-label="上から見る（俯瞰に戻る）">俯瞰</button>
 </header>
-<div id="map" role="application" aria-label="街道と宿場の地図"></div>
-<div id="aoiBox" title="碧（あおい）。押すと次の言葉へ"><div class="fb">碧</div><div class="nm">碧（AI）</div></div>
-<section id="sheet" aria-live="polite">
-  <div class="prog">
-    <button id="prev" aria-label="前の宿">◀</button>
-    <div class="pt"><div class="hw" id="pHw"></div><div class="nm" id="pNm"></div></div>
-    <button id="next" aria-label="次の宿">▶</button>
-  </div>
-  <div class="bar"><i id="pBar"></i></div>
-  <div class="bub">
-    <div class="steps" id="steps"><span>見る</span><span>碧の話</span><span>見直す</span></div>
-    <p id="say"></p>
-    <div class="row"><span class="sp tiny" id="sayNote"></span><button id="voice" hidden>声</button><button id="stepBtn">つぎへ</button></div>
-  </div>
-  <div class="scroll" id="scroll">
-    <div class="tools">
-      <button id="openCard" aria-expanded="false">札をひらく</button>
-      <button id="walkBtn" aria-pressed="false">現地で歩く（GPS）</button>
-      <button id="here">ここに来た</button>
-    </div>
-    <div id="walk"></div>
-    <div id="card"></div>
-  </div>
+<div id="groups" hidden role="group" aria-label="見る範囲"></div>
+<div id="attr">出典：国土地理院／© OpenStreetMap</div>
+<audio id="aoiVoice" preload="auto" playsinline></audio>
+<section id="start" aria-label="はじめに">
+  <h1>街道幽玄</h1><p id="english-name"></p>
+  <p id="lead"></p>
+  <div class="chips" id="chipsA" role="radiogroup" aria-label="聞きたい話（一つ）"></div>
+  <button class="go" id="goBtn">はじめる（音が出ます）</button>
+  <button class="go2" id="goMute">音なしではじめる</button>
 </section>
-<div id="dlg" role="dialog" aria-modal="true"><div class="in" id="dlgIn"></div></div>
+<div id="sub" class="rest" role="status" aria-live="polite">
+  <div class="hd"><span class="who">碧</span>
+    <button class="ctl" id="replayBtn" aria-label="いまの話をもう一度">もう一度</button>
+    <button class="ctl" id="skipBtn" aria-label="この話をとばす">とばす</button>
+    <button class="ctl" id="walkBtn" aria-label="歩くのを止める・続ける" hidden>止まる</button>
+    <button class="ctl" id="sndBtn" aria-pressed="true" aria-label="碧の声（押すと消音）">音</button>
+    <button class="ctl" id="bigSub" aria-pressed="false" aria-label="字幕の文字を大きく">字</button></div>
+  <p id="subT" class="idle"></p>
+</div>
+<div id="endbar" hidden><button id="endUp">俯瞰へ</button><button id="endNext" class="pri">次へ</button></div>
+<div id="fade" aria-hidden="true"></div>
+<div id="toast" aria-live="polite"></div>
+<nav id="menu" hidden aria-label="メニュー"></nav>
 
 <script type="module">
-const $ = s => document.querySelector(s);
+// ================================================================================================
+// Qualium の 3D 地形版。データ（APP）は build3d.py が埋め込む。
+//   俯瞰：国土地理院の標高タイル（dem_png）で地形を組み、写真タイル（seamlessphoto）を貼る。近い所ほど細かいタイル（四分木）。
+//   降りる：選んだ地点の手前の道すじ（街道の線・前の札所からの線）に沿って、連続して降りる。
+//   歩く：地点のまわり 400 m の道・建物・木（OpenStreetMap）。碧は先に来て待っていて、見る人の斜め前を歩きながら話す。
+// 位置は使わない（画面の中だけ）。端末に覚えるのは、選んだ話・音・文字の大きさだけ。
+// ================================================================================================
+import * as THREE from "three";
+import { Line2 } from "three/addons/lines/Line2.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+
+const APP = {"title":"街道幽玄","desc":"関東の五つの街道を、3D の地形で上から見て、宿を選び、碧（あおい）といっしょに歩く。","kind":"宿","store":"ftw-kaido3d","layers":["自然","歴史","文化","道"],"layer_def":"歴史","origin":[139.45,35.95],"bbox":[138.55,34.95,140.45,37.15],"rootZ":7,"view0":{"lon":139.45,"lat":35.98,"dist":230000,"pitch":0.95,"yaw":0},"lines":[{"c":"#2f6f8f","dash":false,"p":[[139.77444,35.68361,3.9],[139.76893,35.67485,3.7],[139.76127,35.6676,3.5],[139.7553,35.66033,4.1],[139.75314,35.64905,3.5],[139.74455,35.64531,4.4],[139.74294,35.64385,4.6],[139.73949,35.63757,5.0],[139.73772,35.63186,5.0],[139.73771,35.62727,7.0],[139.73825,35.62487,8.4],[139.73977,35.62241,5.3],[139.73917,35.62194,7.0],[139.73977,35.62241,5.3],[139.74449,35.61721,2.7],[139.74427,35.60905,3.4],[139.74386,35.60609,5.7],[139.73903,35.59552,2.0],[139.73616,35.59085,1.9],[139.73596,35.58712,1.8],[139.73682,35.58134,3.4],[139.73621,35.57763,4.7],[139.73473,35.57446,2.3],[139.71003,35.54164,3.2],[139.7083,35.53538,4.2],[139.70778,35.53556,4.5],[139.7018,35.53187,2.5],[139.70032,35.52815,1.8],[139.68877,35.52155,2.5],[139.68166,35.51522,3.1],[139.67781,35.50997,4.6],[139.67837,35.50745,5.2],[139.6739,35.4956,4.2],[139.66969,35.4935,2.5],[139.66388,35.49176,2.4],[139.65601,35.48647,4.7],[139.64466,35.48369,5.8],[139.63887,35.47944,5.2],[139.63068,35.47076,5.3],[139.61863,35.46976,9.3],[139.61429,35.46824,7.9],[139.61278,35.46613,3.8],[139.60864,35.46282,7.3],[139.60296,35.45322,4.7],[139.59556,35.44403,8.6],[139.57885,35.44664,16.1],[139.57814,35.44565,20.5],[139.57645,35.44498,32.4],[139.57565,35.44356,44.5],[139.5728,35.44128,59.5],[139.57249,35.43997,61.4],[139.57017,35.43866,69.4],[139.56925,35.43708,71.3],[139.56666,35.43646,71.8],[139.56332,35.43117,61.8],[139.56315,35.42803,59.7],[139.56082,35.42715,32.6],[139.55719,35.42122,19.8],[139.55382,35.42103,19.6],[139.55031,35.41992,20.0],[139.54878,35.41836,18.0],[139.54302,35.41494,20.5],[139.5418,35.41289,15.6],[139.54186,35.41124,15.7],[139.54,35.41105,16.3],[139.53794,35.40663,15.6],[139.53649,35.40518,16.1],[139.53682,35.40335,16.0],[139.53211,35.40125,17.0],[139.52908,35.39333,16.1],[139.5241,35.39195,28.4],[139.52104,35.38871,52.7],[139.51888,35.38777,58.2],[139.51678,35.38525,55.0],[139.51517,35.38434,61.1],[139.51411,35.38229,68.5],[139.51166,35.38028,62.5],[139.50516,35.37678,48.6],[139.49737,35.36415,57.7],[139.49467,35.36096,54.8],[139.49103,35.35302,49.3],[139.4903,35.34957,39.5],[139.48797,35.34652,12.9],[139.48731,35.3468,13.0],[139.48631,35.34567,13.3],[139.48508,35.34684,13.1],[139.48118,35.34788,14.9],[139.47258,35.34659,13.1],[139.46725,35.34786,9.5],[139.46379,35.34651,15.2],[139.45863,35.34763,14.7],[139.45266,35.34604,19.5],[139.4497,35.34653,17.9],[139.44652,35.34467,15.0],[139.4401,35.34308,13.0],[139.43194,35.3374,12.4],[139.42927,35.33702,12.6],[139.42475,35.33775,14.8],[139.42144,35.33761,12.0],[139.41411,35.33629,12.2],[139.40951,35.33414,10.6],[139.39269,35.32853,4.5],[139.39057,35.32915,3.3],[139.38705,35.33256,2.9],[139.38124,35.33318,2.9],[139.36082,35.33168,5.2],[139.34742,35.3296,7.0],[139.3324,35.32624,4.9],[139.33116,35.32466,5.0],[139.32303,35.31897,6.5],[139.314,35.30722,12.7],[139.30691,35.30781,20.0],[139.29119,35.30385,18.0],[139.28711,35.30571,10.0],[139.28281,35.30476,12.9],[139.27268,35.30378,19.2],[139.26208,35.29905,14.6],[139.25024,35.29533,16.9],[139.24858,35.29545,16.7],[139.24436,35.29306,24.5],[139.2385,35.29082,14.1],[139.23064,35.28631,17.0],[139.22266,35.28353,14.5],[139.21805,35.28118,13.1],[139.2053,35.27859,8.3],[139.20148,35.27404,4.4],[139.19687,35.27056,10.5],[139.19158,35.26759,8.6],[139.18273,35.26456,7.9],[139.17822,35.2614,6.6],[139.17839,35.25974,6.5],[139.16772,35.2545,6.0],[139.16513,35.25272,6.1],[139.16592,35.25196,4.4],[139.16103,35.24872,7.2],[139.1566,35.24734,9.8],[139.14765,35.24614,14.3],[139.14191,35.24759,17.5],[139.13772,35.24662,29.7],[139.13514,35.24649,34.0],[139.13192,35.24734,36.8],[139.12841,35.24654,40.6],[139.12247,35.24288,60.6],[139.11979,35.23996,59.9],[139.11543,35.23697,73.4],[139.11386,35.23498,79.7],[139.11144,35.2339,93.3],[139.10883,35.23377,95.5],[139.10859,35.23236,88.2],[139.10578,35.22984,119.8],[139.09857,35.22811,153.3],[139.09522,35.22798,156.4],[139.09523,35.22675,182.4],[139.09364,35.22687,160.1],[139.0927,35.2248,187.2],[139.09058,35.22498,182.8],[139.08573,35.22276,217.7],[139.08425,35.22285,223.5],[139.07652,35.22086,256.4],[139.07463,35.22103,251.0],[139.07328,35.21957,269.8],[139.07218,35.22025,289.1],[139.07068,35.21844,306.0],[139.06621,35.21619,352.9],[139.06603,35.21383,365.8],[139.06371,35.21321,391.8],[139.06142,35.20988,434.8],[139.06044,35.20975,464.6],[139.06069,35.20909,468.2],[139.0595,35.20976,492.1],[139.05956,35.20877,493.1],[139.05908,35.20943,503.8],[139.05872,35.20879,516.1],[139.0574,35.2087,562.8],[139.05757,35.20751,551.2],[139.05604,35.20559,593.7],[139.05131,35.20257,684.5],[139.04672,35.20261,719.6],[139.04205,35.20412,782.0],[139.03405,35.20375,763.3],[139.03088,35.20095,732.9],[139.02885,35.19604,742.4],[139.0264,35.19318,737.0],[139.02639,35.19224,735.2],[139.02742,35.19151,737.2],[139.02391,35.18789,736.6],[139.01975,35.18774,745.6],[139.0185,35.18615,780.4],[139.01647,35.18562,822.1],[139.01653,35.18413,831.7],[139.0139,35.1819,849.5]]},{"c":"#7a5c2e","dash":false,"p":[[139.77444,35.68361,3.9],[139.77428,35.68553,4.0],[139.76879,35.69801,4.6],[139.76902,35.69972,4.9],[139.76118,35.705,25.1],[139.75859,35.71602,20.6],[139.75752,35.71612,20.1],[139.75537,35.71817,20.3],[139.75211,35.72368,20.1],[139.74548,35.7271,20.7],[139.73699,35.73457,25.3],[139.73146,35.7381,25.6],[139.72221,35.74569,25.3],[139.71425,35.74929,25.4],[139.7118,35.7511,26.9],[139.7097,35.75331,25.8],[139.70885,35.7575,19.2],[139.70632,35.76322,24.0],[139.70255,35.76862,22.2],[139.6963,35.77527,20.8],[139.69274,35.77719,19.9],[139.69234,35.77798,15.7],[139.6916,35.77791,14.5],[139.69157,35.77931,7.6],[139.69069,35.77989,5.4],[139.69143,35.78001,6.1],[139.6905,35.78145,4.3],[139.68912,35.78322,3.3],[139.6865,35.78485,3.1],[139.68489,35.78842,3.2],[139.68541,35.79147,2.9],[139.68598,35.79111,2.8],[139.68625,35.79166,2.8],[139.68638,35.79535,3.3],[139.68757,35.79649,3.1],[139.68547,35.7964,3.2],[139.68427,35.80134,3.7],[139.68572,35.80161,2.9],[139.68562,35.80338,2.6],[139.68654,35.8035,2.8],[139.68636,35.80433,2.9],[139.68555,35.80422,2.8],[139.68531,35.80552,2.7],[139.68372,35.80531,2.6],[139.68337,35.8121,3.5],[139.68247,35.81267,3.7],[139.68135,35.82161,4.5],[139.67647,35.82782,5.5],[139.66975,35.82948,5.6],[139.66762,35.83295,5.4],[139.66325,35.83516,5.3],[139.66179,35.83764,5.3],[139.66006,35.83892,6.0],[139.66037,35.84114,7.6],[139.65878,35.84339,8.8],[139.65884,35.84515,9.6],[139.65719,35.84881,11.3],[139.65529,35.85083,12.2],[139.65437,35.85654,15.3],[139.65021,35.86865,14.5],[139.64733,35.87231,12.7],[139.643,35.88075,12.3],[139.63519,35.89281,11.0],[139.62899,35.90079,11.9],[139.62761,35.90361,12.5],[139.62081,35.92832,15.4],[139.61282,35.93849,14.9],[139.60814,35.94668,14.7],[139.60497,35.94952,15.0],[139.60258,35.95313,15.1],[139.59644,35.96815,16.2],[139.5896,35.97391,15.4],[139.58353,35.98033,17.2],[139.57592,35.98959,19.6],[139.57334,35.99392,19.1],[139.56856,35.99758,19.9],[139.56511,36.00194,19.9],[139.54858,36.01664,23.5],[139.53651,36.03054,26.4],[139.53203,36.03723,27.8],[139.52063,36.04929,25.1],[139.51753,36.05512,25.6],[139.51106,36.06167,24.5],[139.51033,36.06089,23.9],[139.51106,36.06167,24.5],[139.50576,36.0665,21.3],[139.49845,36.06893,20.4],[139.48851,36.07458,18.5],[139.48361,36.07646,18.1],[139.47662,36.08121,17.7],[139.47292,36.08588,19.6],[139.46514,36.09252,17.1],[139.46005,36.09984,17.1],[139.45542,36.10402,17.6],[139.45132,36.10626,18.2],[139.45054,36.10546,18.0],[139.44767,36.1051,18.1],[139.44794,36.1047,18.0],[139.43857,36.1045,19.5],[139.43672,36.10683,20.8],[139.42987,36.11178,19.9],[139.42135,36.11662,21.3],[139.41757,36.12111,21.3],[139.40431,36.12327,23.1],[139.39992,36.13119,23.6],[139.40036,36.13177,23.3],[139.39513,36.1348,26.3],[139.39315,36.13734,25.5],[139.39244,36.14203,26.0],[139.38252,36.14515,30.1],[139.38046,36.14717,30.4],[139.37544,36.14954,31.1],[139.36431,36.1598,34.9],[139.35106,36.16855,36.6],[139.34793,36.17195,35.0],[139.34636,36.17264,35.0],[139.34364,36.1753,35.1],[139.33504,36.17765,35.6],[139.32518,36.1853,36.4],[139.31543,36.19145,37.1],[139.31046,36.19198,37.0],[139.30226,36.19419,38.3],[139.27914,36.19522,37.9],[139.2719,36.19453,42.7],[139.26377,36.19579,43.1],[139.26131,36.19797,42.6],[139.2556,36.20108,46.3],[139.24266,36.21418,42.9],[139.2378,36.21844,44.3],[139.23493,36.21969,44.3],[139.23467,36.22534,40.2],[139.23329,36.22592,40.0],[139.2308,36.22901,40.0],[139.22799,36.22996,40.3],[139.22629,36.23189,41.8],[139.22682,36.23211,41.9],[139.22129,36.23383,42.0],[139.21805,36.23637,42.1],[139.21396,36.23785,42.4],[139.2107,36.23786,44.1],[139.20919,36.23648,44.4],[139.20137,36.23694,51.4],[139.19285,36.24032,54.7],[139.18448,36.24072,56.5],[139.18458,36.24161,55.7],[139.18448,36.24072,56.5],[139.18311,36.24081,56.4],[139.17865,36.24227,58.4],[139.17532,36.24386,58.8],[139.17421,36.24676,56.9],[139.16882,36.25091,59.2],[139.16117,36.25409,55.7],[139.15496,36.25498,55.6],[139.15394,36.25622,55.0],[139.14713,36.25889,57.4],[139.14665,36.2604,57.4],[139.14122,36.26332,59.0],[139.13487,36.26557,61.4],[139.12981,36.26648,61.7],[139.12633,36.26593,64.0],[139.12342,36.26651,64.7],[139.11397,36.27038,65.9],[139.11168,36.27208,65.7],[139.11247,36.27197,65.6],[139.11095,36.27445,64.5],[139.10751,36.2776,63.6],[139.10532,36.27866,64.3],[139.10111,36.27934,65.0],[139.0872,36.28634,69.0],[139.08267,36.2877,70.1],[139.08214,36.28905,69.7],[139.08294,36.28896,69.7],[139.08046,36.28919,69.7],[139.07674,36.28851,71.1],[139.07601,36.29179,70.0],[139.07967,36.29265,69.7],[139.07215,36.29327,75.5],[139.0708,36.29398,75.6],[139.05803,36.29403,75.2],[139.05366,36.29549,80.1],[139.04131,36.29782,85.0],[139.03347,36.30057,85.1],[139.02951,36.3032,86.2],[139.0262,36.30652,87.1],[139.01866,36.31043,90.3],[139.01381,36.31391,92.9],[139.00807,36.31913,92.8],[139.00749,36.32235,94.2],[139.00703,36.32231,94.2],[139.00749,36.32235,94.2],[139.00619,36.33065,96.0],[139.00008,36.33029,95.4],[138.99723,36.32918,91.9],[138.99213,36.33331,93.7],[138.99237,36.3338,94.9],[138.98769,36.33243,94.3],[138.98202,36.33494,95.2],[138.9651,36.33247,103.5],[138.96508,36.33293,103.6],[138.96375,36.33321,104.5],[138.96007,36.33298,105.8],[138.94957,36.33398,110.8],[138.94027,36.33633,118.5],[138.93796,36.33622,119.2],[138.93409,36.33714,122.1],[138.93017,36.33744,123.6],[138.92636,36.33694,126.7],[138.9238,36.33751,131.7],[138.92063,36.33573,128.9],[138.92025,36.33634,128.5],[138.91305,36.33393,135.2],[138.91326,36.33298,135.4],[138.91242,36.33274,135.9],[138.90798,36.33345,144.6],[138.90668,36.33305,145.0],[138.90129,36.3305,152.5],[138.89507,36.32657,160.4],[138.88759,36.32367,178.8],[138.87668,36.32045,194.6],[138.86371,36.31519,211.5],[138.85894,36.31446,222.9],[138.84697,36.31107,231.1],[138.83623,36.30661,242.5],[138.82266,36.30655,260.1],[138.80946,36.31105,270.9],[138.80453,36.31197,275.8],[138.78626,36.31928,312.5],[138.78259,36.31886,315.5],[138.78008,36.32023,316.9],[138.77236,36.32067,323.0],[138.76301,36.3273,372.2],[138.76154,36.32743,374.5],[138.75977,36.32643,357.4],[138.75653,36.3278,358.5],[138.75756,36.32679,350.0],[138.75585,36.3274,348.2],[138.74835,36.33369,376.4],[138.74494,36.33435,373.5],[138.74107,36.336,386.7],[138.72777,36.33903,399.7],[138.72758,36.34,406.5],[138.72358,36.34413,442.2],[138.71453,36.35268,477.2],[138.71349,36.35528,501.7],[138.71403,36.35584,528.9],[138.7135,36.35736,559.3],[138.71143,36.35765,582.3],[138.71178,36.35817,580.2],[138.70977,36.35963,622.6],[138.70819,36.35977,672.0],[138.70908,36.35862,706.7],[138.7066,36.35787,762.9],[138.70228,36.36042,789.1],[138.70102,36.36033,794.0],[138.69724,36.3628,781.0],[138.69528,36.36302,806.1],[138.69387,36.3643,835.2],[138.6931,36.36362,846.2],[138.69147,36.36367,873.1],[138.68927,36.36569,888.0],[138.68872,36.36716,881.0],[138.68736,36.36679,887.4],[138.68308,36.369,933.8],[138.68065,36.36879,943.7],[138.67651,36.37066,954.2],[138.67294,36.36906,1007.0],[138.66978,36.3691,1045.3],[138.6662,36.37166,1071.4],[138.66281,36.37219,1078.5],[138.66292,36.37158,1075.8],[138.66184,36.37165,1104.0],[138.66188,36.37008,1126.9],[138.65844,36.37083,1184.3],[138.65672,36.36941,1194.6],[138.65621,36.36967,1206.4]]},{"c":"#8a3b3b","dash":false,"p":[[139.77444,35.68361,3.9],[139.77342,35.68754,4.0],[139.77594,35.68837,4.0],[139.77555,35.68926,4.1],[139.77634,35.68849,4.0],[139.77764,35.68891,4.1],[139.78514,35.69427,3.2],[139.78512,35.69549,2.8],[139.78928,35.70185,2.3],[139.79546,35.70785,2.2],[139.79623,35.71087,2.2],[139.79768,35.71076,2.2],[139.80173,35.71512,2.3],[139.80118,35.72542,2.0],[139.79632,35.73665,1.8],[139.79788,35.74125,2.3],[139.7984,35.74117,2.4],[139.80151,35.74717,1.0],[139.80287,35.75053,1.8],[139.80231,35.75069,1.9],[139.80287,35.75053,1.8],[139.80489,35.75554,1.5],[139.80347,35.7567,2.2],[139.80175,35.7569,2.0],[139.80339,35.76179,0.9],[139.79889,35.76235,1.4],[139.79798,35.76722,0.4],[139.7975,35.80176,3.1],[139.79829,35.80281,2.9],[139.79791,35.80438,3.0],[139.80138,35.80668,3.0],[139.80631,35.82308,2.8],[139.80574,35.82529,3.1],[139.80656,35.83543,3.5],[139.80712,35.83594,3.4],[139.80049,35.85402,3.4],[139.79934,35.85524,3.4],[139.80002,35.85575,3.4],[139.7993,35.85782,3.5],[139.79528,35.86265,3.9],[139.79201,35.88541,4.7],[139.78698,35.893,4.9],[139.78384,35.89528,5.6],[139.77864,35.90933,5.1],[139.77889,35.91506,5.1],[139.78176,35.91879,5.0],[139.78202,35.92043,5.0],[139.78078,35.92703,5.0],[139.778,35.93222,5.2],[139.77572,35.94603,5.1],[139.77655,35.95576,5.2],[139.77164,35.963,6.0],[139.76247,35.98,6.5],[139.75182,35.98356,7.6],[139.75319,35.98529,7.8],[139.75234,35.98682,7.6],[139.7531,35.9899,5.7],[139.75217,35.99485,6.0],[139.75252,36.00246,7.7],[139.75469,36.00994,6.8],[139.75352,36.01347,6.8],[139.75172,36.01534,8.2],[139.75109,36.01511,8.2],[139.75176,36.01557,8.4],[139.74551,36.02001,8.0],[139.7333,36.02687,8.1],[139.72514,36.0306,8.7],[139.71057,36.06752,8.9],[139.71047,36.06846,9.2],[139.71801,36.07185,8.7],[139.72052,36.08098,9.9],[139.72166,36.08149,10.0],[139.72087,36.09415,10.4],[139.72328,36.10563,10.5],[139.7238,36.11304,11.0],[139.72294,36.11478,11.2],[139.71955,36.11763,10.1],[139.7183,36.11983,10.1],[139.71211,36.12572,12.3],[139.71048,36.12601,12.8],[139.70882,36.12717,12.3],[139.70823,36.13019,11.1],[139.70369,36.13886,12.9],[139.70203,36.13842,12.5],[139.70369,36.13886,12.9],[139.70247,36.14157,12.6],[139.70843,36.14718,13.6],[139.7175,36.15998,15.0],[139.71326,36.17829,16.3],[139.71016,36.1832,16.3],[139.70404,36.18811,16.6],[139.70545,36.19488,19.2]]},{"c":"#8a3b3b","dash":true,"p":[[139.70545,36.19488,19.2],[139.71455,36.22087,23.6],[139.76315,36.27207,26.8],[139.80017,36.31461,31.7],[139.82893,36.35936,46.4],[139.84197,36.38718,52.3],[139.86139,36.43522,66.2],[139.87918,36.49342,85.8],[139.87779,36.56111,124.9],[139.84395,36.65053,194.3],[139.76207,36.69694,310.4],[139.69902,36.72823,371.3],[139.60785,36.75148,584.3],[139.604,36.75336,594.2]]},{"c":"#4f6b3a","dash":false,"p":[[139.77444,35.68361,3.9],[139.7725,35.68083,4.0],[139.76989,35.68199,4.5],[139.77063,35.68353,4.5],[139.76737,35.68422,5.1],[139.76597,35.68278,3.9],[139.76252,35.68371,4.9],[139.75958,35.67541,3.6],[139.75343,35.67796,6.9],[139.75103,35.67738,8.9],[139.74918,35.67766,12.0],[139.74593,35.68003,15.3],[139.74448,35.68248,18.5],[139.74435,35.68413,25.2],[139.73488,35.68421,24.0],[139.73127,35.68574,17.8],[139.73137,35.68627,17.8],[139.72385,35.6891,30.8],[139.72332,35.68804,31.5],[139.71557,35.68752,30.6],[139.70658,35.68988,35.4],[139.70326,35.68983,35.4],[139.69621,35.68771,39.7],[139.69644,35.68735,38.9],[139.68826,35.6821,39.8],[139.6804,35.67812,36.5],[139.65533,35.67078,42.7],[139.65041,35.67001,42.0],[139.64561,35.66793,45.2],[139.6386,35.66762,43.4],[139.63264,35.66949,44.2],[139.61373,35.67203,45.2],[139.60628,35.67153,45.1],[139.60336,35.6703,46.0],[139.59745,35.66907,46.2],[139.58934,35.66495,44.7],[139.5702,35.65794,32.9],[139.55634,35.65026,34.2],[139.55477,35.65022,33.9],[139.53399,35.65649,39.0],[139.53258,35.65766,39.5],[139.52364,35.66141,41.4],[139.5175,35.6649,43.7],[139.50968,35.6679,47.2],[139.49847,35.66936,49.8],[139.47013,35.66999,57.9],[139.45875,35.67348,64.2],[139.44261,35.68132,65.1],[139.42784,35.6826,70.0],[139.41864,35.68457,70.8],[139.41486,35.68672,74.7],[139.41307,35.68873,76.8],[139.41079,35.68761,72.9],[139.40959,35.68561,68.8],[139.40801,35.68627,69.7],[139.40589,35.6814,70.0],[139.40404,35.6802,70.2],[139.4028,35.67744,71.4],[139.39527,35.67965,75.6],[139.39431,35.67863,78.0],[139.39326,35.67883,79.2],[139.39139,35.67685,96.1],[139.38691,35.67463,102.7],[139.37391,35.67009,112.8],[139.3645,35.66594,115.3],[139.35502,35.66269,106.9],[139.35101,35.66189,103.6],[139.34846,35.66207,104.0],[139.34734,35.66096,104.1],[139.34369,35.662,106.1],[139.34094,35.66195,109.6],[139.34031,35.6597,109.0],[139.31841,35.66094,126.6],[139.30643,35.65492,139.7],[139.30604,35.65543,139.0],[139.29587,35.64869,150.0],[139.29111,35.647,156.2],[139.287,35.64671,158.6],[139.2815,35.64289,166.2],[139.2744,35.64161,175.0],[139.27294,35.64043,177.1],[139.26598,35.64144,196.8],[139.26144,35.6397,195.4],[139.25521,35.63847,213.9],[139.25294,35.63988,221.1],[139.24844,35.63939,227.9],[139.24434,35.64012,236.8],[139.24299,35.63974,233.4],[139.24283,35.63865,239.2],[139.23816,35.63967,263.1],[139.22792,35.64019,321.8],[139.22523,35.63918,345.3],[139.22591,35.63979,341.6],[139.22,35.63856,417.2],[139.21877,35.63706,455.7],[139.21716,35.63799,526.1],[139.21667,35.63556,540.8],[139.21536,35.63392,514.1],[139.21436,35.63419,490.7],[139.21289,35.63333,463.8],[139.21204,35.63409,413.0],[139.21131,35.63369,397.9],[139.20954,35.63397,369.0],[139.2101,35.63339,366.7],[139.20893,35.63361,355.0],[139.20739,35.6329,296.9],[139.20726,35.63336,291.4],[139.20707,35.63271,276.4],[139.20799,35.63235,277.6],[139.20676,35.63281,269.3],[139.20519,35.63151,241.5],[139.20353,35.63294,236.7],[139.20386,35.62739,217.5],[139.20182,35.62299,204.3],[139.1957,35.61875,220.4],[139.19332,35.61918,242.8],[139.19202,35.61827,236.8],[139.19274,35.61698,223.3],[139.19179,35.61708,213.1],[139.19062,35.61549,203.2],[139.18411,35.61799,211.9]]},{"c":"#4f6b3a","dash":true,"p":[[139.18411,35.61799,211.9],[139.16792,35.61398,179.9]]},{"c":"#4f6b3a","dash":false,"p":[[139.16792,35.61398,179.9],[139.16332,35.6129,196.5],[139.1574,35.61465,212.8],[139.1553,35.61453,206.3],[139.15312,35.61527,209.3],[139.15156,35.61485,196.7],[139.14268,35.61728,208.8],[139.14129,35.61785,211.4],[139.14203,35.61805,218.4],[139.14153,35.61846,219.8]]},{"c":"#3b4f8a","dash":true,"p":[[139.87779,36.56111,124.9],[139.94128,36.62983,153.4],[139.96637,36.68693,162.1],[140.00854,36.73162,136.1],[140.01327,36.79987,198.8],[140.02513,36.86779,208.6],[140.08015,36.94769,259.1],[140.09868,36.95531,249.8],[140.16763,36.99006,314.7]]}],"dots":[[139.70778,35.53556,3.8,"#2f6f8f","川崎宿"],[139.63228,35.47278,3.7,"#2f6f8f","神奈川宿"],[139.59556,35.44403,6.9,"#2f6f8f","保土ヶ谷宿"],[139.52986,35.39503,13.0,"#2f6f8f","戸塚宿"],[139.48631,35.34567,11.0,"#2f6f8f","藤沢宿"],[139.33781,35.32728,5.1,"#2f6f8f","平塚宿"],[139.31531,35.309,10.0,"#2f6f8f","大磯宿"],[139.16103,35.24872,9.7,"#2f6f8f","小田原宿"],[139.0139,35.1819,845.7,"#2f6f8f","箱根峠"],[139.70919,35.75508,23.1,"#7a5c2e","板橋宿"],[139.65256,35.86136,14.4,"#7a5c2e","浦和宿"],[139.58453,35.97969,17.0,"#7a5c2e","上尾宿"],[139.56511,36.00194,20.2,"#7a5c2e","桶川宿"],[139.51033,36.06089,23.6,"#7a5c2e","鴻巣宿"],[139.38286,36.145,29.9,"#7a5c2e","熊谷宿"],[139.27914,36.19522,38.3,"#7a5c2e","深谷宿"],[139.18458,36.24161,56.7,"#7a5c2e","本庄宿"],[139.11168,36.27208,64.9,"#7a5c2e","新町宿"],[139.04867,36.29636,82.0,"#7a5c2e","倉賀野宿"],[139.00703,36.32231,95.5,"#7a5c2e","高崎宿"],[138.93017,36.33744,122.5,"#7a5c2e","板鼻宿"],[138.89989,36.3295,153.4,"#7a5c2e","安中宿"],[138.80453,36.31197,274.5,"#7a5c2e","松井田宿"],[139.78311,35.89663,5.9,"#8a3b3b","越ヶ谷宿"],[139.754,35.9827,8.0,"#8a3b3b","粕壁宿"],[139.7333,36.02687,7.7,"#8a3b3b","杉戸宿"],[139.7193,36.0759,8.4,"#8a3b3b","幸手宿"],[139.70948,36.14879,14.6,"#8a3b3b","中田宿"],[139.70545,36.19488,21.2,"#8a3b3b","古河宿"],[139.71455,36.22087,23.0,"#8a3b3b","野木宿"],[139.76315,36.27207,29.1,"#8a3b3b","間々田宿"],[139.80017,36.31461,34.2,"#8a3b3b","小山宿"],[139.82893,36.35936,47.6,"#8a3b3b","新田宿"],[139.84197,36.38718,54.5,"#8a3b3b","小金井宿"],[139.86139,36.43522,68.0,"#8a3b3b","石橋宿"],[139.87918,36.49342,84.2,"#8a3b3b","雀宮宿"],[139.87779,36.56111,124.6,"#8a3b3b","宇都宮宿"],[139.84395,36.65053,195.7,"#8a3b3b","徳次郎宿"],[139.76207,36.69694,313.4,"#8a3b3b","大沢宿"],[139.69902,36.72823,370.7,"#8a3b3b","今市宿"],[139.61012,35.6719,46.5,"#4f6b3a","高井戸宿（下高井戸・上高井戸）"],[139.54565,35.65318,36.4,"#4f6b3a","布田五宿（国領・下布田・上布田・下石原・上石原）"],[139.39966,35.67829,73.6,"#4f6b3a","日野宿"],[139.33115,35.66043,116.8,"#4f6b3a","八王子宿"],[139.21667,35.63556,548.1,"#4f6b3a","小仏峠"],[139.18411,35.61799,208.8,"#4f6b3a","与瀬宿"],[139.16792,35.61398,186.8,"#4f6b3a","吉野宿"],[139.14153,35.61846,218.1,"#4f6b3a","関野宿"],[139.94128,36.62983,154.7,"#3b4f8a","白沢宿"],[139.96637,36.68693,162.9,"#3b4f8a","氏家宿"],[140.00854,36.73162,139.2,"#3b4f8a","喜連川宿"],[140.01327,36.79987,198.5,"#3b4f8a","佐久山宿"],[140.02513,36.86779,210.0,"#3b4f8a","大田原宿"],[140.08015,36.94769,258.9,"#3b4f8a","鍋掛宿"],[140.09868,36.95531,252.1,"#3b4f8a","越堀宿"]],"points":[{"id":"start","name":"日本橋","short":"日本橋","group":"起点","color":"#3a4a44","ll":[139.774444,35.683611],"elev":4.2,"walk":[[-9.7,-194.3],[-8.9,-191.4],[-8.1,-188.5],[-7.3,-185.6],[-6.5,-182.7],[-5.6,-179.9],[-4.8,-177.0],[-4.0,-174.1],[-3.2,-171.2],[-2.4,-168.3],[-1.5,-165.4],[-0.7,-162.5],[0.1,-159.7],[0.9,-156.8],[1.7,-153.9],[2.6,-151.0],[3.4,-148.1],[4.2,-145.2],[5.0,-142.3],[5.8,-139.4],[6.3,-136.5],[6.7,-133.5],[7.2,-130.6],[7.7,-127.6],[8.2,-124.6],[8.6,-121.7],[9.1,-118.7],[9.5,-115.7],[9.6,-112.7],[9.7,-109.7],[9.9,-106.7],[10.0,-103.8],[10.2,-100.8],[10.3,-97.8],[10.5,-94.8],[10.5,-91.8],[10.4,-88.8],[10.2,-85.8],[10.1,-82.8],[9.9,-79.8],[9.8,-76.8],[9.6,-73.8],[9.4,-70.8],[9.3,-67.8],[8.9,-64.8],[8.5,-61.9],[8.1,-58.9],[7.7,-55.9],[7.2,-52.9],[6.8,-50.0],[6.4,-47.0],[6.0,-44.0],[5.5,-41.1],[5.0,-38.1],[4.5,-35.2],[3.9,-32.2],[3.4,-29.3],[2.8,-26.3],[2.3,-23.4],[1.7,-20.4],[1.1,-17.5],[0.4,-14.6],[-0.3,-11.6],[-1.0,-8.7],[-1.8,-5.8],[-2.5,-2.9],[-3.2,-0.0],[-4.1,2.9],[-5.1,5.7],[-6.0,8.5],[-7.0,11.4],[-8.0,14.2],[-9.1,17.0],[-10.4,19.7],[-11.8,22.3],[-13.2,25.0],[-14.5,27.7],[-15.9,30.4],[-17.3,33.0],[-18.7,35.7],[-20.0,38.4],[-21.4,41.0],[-22.8,43.7]],"walk_how":"街道の線（OSM）","walk_m":246,"appr":[[139.74048,35.7317],[139.74548,35.7271],[139.74649,35.72694],[139.75211,35.72368],[139.75537,35.71817],[139.75752,35.71612],[139.75859,35.71602],[139.76118,35.705],[139.76902,35.69972],[139.76879,35.69801],[139.76947,35.6974],[139.77433624101204,35.68536809405625]],"local":"web/local/start.json","talk":{"greet":["日本橋です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["日本橋は、日本橋川に架かる橋です。"],"歴史":["最初の橋は、1603 年に架けられたと、江戸のはじめの『見聞集』という記録にあります。","1604 年、幕府は日本橋を五街道の起点と定め、一里ごとに一里塚を設けました。","いまの石の橋は、1911 年の 4 月 3 日に開通した、石造りの二連のアーチ橋です。"],"文化":["1919 年の旧道路法で、東京市道路元標の位置は、日本橋の中央と定められました。"],"道":["ここは五街道の起点、日本橋です。東海道、中山道、日光街道、甲州街道、奥州街道が、ここから始まります。","ここの地面の標高は、およそ 4 メートルです。国土地理院の標高から読んだ値です。"]},"look":["現地では、橋の上から、川の水面がどれくらい下にあるかを見てください。"],"end":["同じこの橋から、東海道も中山道も日光街道も甲州街道も始まります。今日はどの方角へ歩き出しますか。"]},"src":["wp:内藤新宿","wp:日本橋 (東京都中央区の橋)"],"h":3.9},{"id":"tk01","name":"品川宿","short":"品川宿","group":"東海道","color":"#2f6f8f","ll":[139.739167,35.621944],"elev":8.7,"walk":[[-1.5,-162.3],[-0.1,-159.6],[1.2,-157.0],[2.6,-154.3],[4.0,-151.6],[5.3,-148.9],[6.7,-146.3],[8.0,-143.6],[9.4,-140.9],[10.7,-138.2],[12.1,-135.6],[13.4,-132.9],[14.8,-130.2],[16.1,-127.5],[17.5,-124.8],[18.8,-122.2],[20.2,-119.5],[21.6,-116.8],[22.9,-114.1],[24.3,-111.5],[25.6,-108.8],[27.0,-106.1],[28.3,-103.4],[29.7,-100.7],[31.0,-98.1],[32.4,-95.4],[33.7,-92.7],[34.5,-89.8],[35.4,-86.9],[36.2,-84.1],[37.1,-81.2],[37.9,-78.3],[38.8,-75.4],[39.6,-72.6],[40.5,-69.7],[40.7,-66.7],[40.7,-63.7],[40.8,-60.7],[40.8,-57.7],[40.8,-54.7],[40.9,-51.7],[40.9,-48.7],[39.8,-45.9],[38.7,-43.1],[37.5,-40.4],[36.4,-37.6],[35.3,-34.8],[34.2,-32.0],[32.0,-29.9],[29.8,-27.9],[27.7,-25.8],[25.5,-23.7],[23.3,-21.6],[21.2,-19.6],[19.0,-17.5],[16.8,-15.4],[14.7,-13.3],[12.5,-11.3],[10.5,-9.4],[12.7,-11.4],[14.8,-13.5],[17.0,-15.6],[19.2,-17.7],[21.3,-19.7],[23.5,-21.8],[25.7,-23.9],[27.8,-26.0],[30.0,-28.0],[32.2,-30.1],[34.4,-32.2],[36.3,-34.1]],"walk_how":"街道の線（OSM）","walk_m":209,"appr":[[139.76893,35.67485],[139.76127,35.6676],[139.7553,35.66033],[139.75395,35.65109],[139.75314,35.64905],[139.7499,35.64803],[139.74455,35.64531],[139.74294,35.64385],[139.74169,35.64185],[139.73949,35.63757],[139.73772,35.63186],[139.73771,35.62727],[139.73825,35.62487],[139.7391508624475,35.62341202524944]],"local":"web/local/tk01.json","talk":{"greet":["品川宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["品川宿は、目黒川を境に、北が北品川宿、南が南品川宿でした。北品川のさらに北には、歩行新宿がありました。","中世から栄えた港町、品川湊の近くに置かれた宿です。"],"歴史":["1601 年に置かれた、東海道の最初の宿です。","範囲は、いまの京急の北品川駅から、青物横丁駅のあたりまでの、旧東海道沿いです。","歩行新宿は、1722 年に宿場と認められた茶屋町でした。"],"文化":["中山道の板橋宿、甲州街道の内藤新宿、日光街道の千住宿と並んで、「江戸四宿」と呼ばれました。"],"道":["ここは東海道の 1 番目の宿、品川宿です。","日本橋から、いまの道に沿って測ると、およそ 8.1 キロ。わたしが計算した値です。","地面の標高は、およそ 9 メートル。前の日本橋より、4 メートル高い所です。","次の川崎宿までは、およそ 11 キロです。"]},"look":["現地では、旧東海道で目黒川を渡るとき、川の幅と水の流れる向きを見てください。"],"end":["川の北と南で町の名前が分かれているか、地図と町の表示で確かめてみてください。"]},"src":["wp:品川宿"],"h":7.0},{"id":"tk10","name":"箱根宿","short":"箱根宿","group":"東海道","color":"#2f6f8f","ll":[139.026361,35.190417],"elev":728.2,"walk":[[62.2,-150.3],[64.4,-148.3],[66.7,-146.4],[69.0,-144.4],[71.3,-142.5],[73.5,-140.5],[75.8,-138.5],[78.1,-136.6],[80.4,-134.6],[82.6,-132.7],[83.6,-130.1],[83.7,-127.1],[83.8,-124.1],[83.8,-121.1],[83.6,-118.1],[82.5,-115.4],[81.3,-112.6],[80.2,-109.8],[79.0,-107.1],[77.9,-104.3],[76.7,-101.5],[75.3,-98.9],[73.7,-96.4],[72.1,-93.9],[70.4,-91.3],[68.8,-88.8],[67.1,-86.3],[65.5,-83.8],[63.9,-81.3],[62.2,-78.8],[60.6,-76.3],[58.8,-73.9],[56.9,-71.5],[55.0,-69.2],[53.1,-66.9],[51.3,-64.5],[49.4,-62.2],[47.5,-59.8],[45.6,-57.5],[43.8,-55.1],[41.9,-52.8],[40.0,-50.5],[38.1,-48.1],[36.3,-45.8],[34.4,-43.4],[32.5,-41.1],[30.6,-38.7],[28.8,-36.4],[26.9,-34.1],[25.0,-31.7],[23.2,-29.4],[21.3,-27.0],[19.4,-24.7],[17.5,-22.3],[15.7,-20.0],[13.8,-17.7],[11.9,-15.3],[10.0,-13.0],[8.2,-10.6],[6.3,-8.3],[4.4,-5.9],[2.5,-3.6],[0.7,-1.3],[-1.2,1.1],[-3.1,3.4],[-4.9,5.8],[-6.8,8.1],[-8.7,10.5],[-10.6,12.8],[-12.4,15.2],[-14.3,17.5],[-16.2,19.8],[-18.0,22.2],[-19.9,24.5],[-21.8,26.9],[-23.6,29.2],[-25.5,31.6],[-27.4,33.9],[-29.3,36.3],[-31.1,38.6]],"walk_how":"街道の線（OSM）","walk_m":237,"appr":[[139.06601,35.21417],[139.06603,35.21383],[139.06371,35.21321],[139.06142,35.20988],[139.06087,35.20987],[139.06101,35.2095],[139.06044,35.20975],[139.06069,35.20909],[139.06024,35.20891],[139.0595,35.20976],[139.05956,35.20877],[139.05908,35.20943],[139.05872,35.20879],[139.0574,35.2087],[139.05757,35.20751],[139.05604,35.20559],[139.05131,35.20257],[139.04853,35.20231],[139.04672,35.20261],[139.04205,35.20412],[139.0418,35.20384],[139.03979,35.20377],[139.0376,35.20427],[139.03405,35.20375],[139.03154,35.20115],[139.03088,35.20095],[139.02977,35.19912],[139.02885,35.19604],[139.02707,35.19356],[139.02677,35.19373],[139.0264,35.19318],[139.02639,35.19224],[139.02704437301884,35.191776221064316]],"local":"web/local/tk10.json","talk":{"greet":["箱根宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["箱根宿は、標高およそ 725 メートル。東海道五十三次の宿で、もっとも高い所に置かれたとされ、幕府も宿の維持に苦心したといわれます。","箱根の関所は、芦ノ湖の湖畔に置かれました。東北に屏風山、西南に芦ノ湖があります。"],"歴史":["1618 年、箱根峠と箱根の関所のあいだの、狭い土地に置かれたと、『新編相模国風土記稿』にあります。","箱根の関所が置かれていたのは、1619 年から 1869 年までです。","最初の住民は、小田原と三島の二つの宿から移されたといわれ、いまも「小田原町」「三島町」という字が残っています。"],"文化":["「小田原町」は小田原藩が、「三島町」は三島の代官所が治める、ほかの宿にない仕組みでした。"],"道":["ここは東海道の 10 番目の宿、箱根宿です。","日本橋から、いまの道に沿って測ると、およそ 103 キロ。わたしが計算した値です。","地面の標高は、およそ 728 メートル。前の小田原宿より、718 メートル高い所です。","次の箱根峠までは、およそ 1.7 キロです。"]},"look":["現地では、芦ノ湖の水面と、まわりの山の稜線を見比べてください。"],"end":[]},"src":["wp:箱根宿","wp:箱根関"],"h":729.3},{"id":"nk02","name":"蕨宿","short":"蕨宿","group":"中山道","color":"#7a5c2e","ll":[139.680278,35.822944],"elev":4.3,"walk":[[97.9,170.8],[97.8,167.8],[97.6,164.8],[97.5,161.8],[97.3,158.8],[97.0,155.8],[95.7,153.1],[94.5,150.4],[93.2,147.7],[92.0,144.9],[90.7,142.2],[89.2,139.6],[87.7,137.0],[86.2,134.4],[84.7,131.8],[83.2,129.2],[81.7,126.6],[80.2,124.0],[78.7,121.4],[77.1,118.9],[75.6,116.3],[74.0,113.8],[72.4,111.2],[70.8,108.7],[69.2,106.2],[67.6,103.6],[66.0,101.1],[64.4,98.5],[62.8,96.0],[61.2,93.4],[59.6,90.9],[58.0,88.4],[56.3,85.9],[54.7,83.4],[53.0,80.9],[51.4,78.4],[49.7,75.9],[48.1,73.4],[46.4,70.9],[44.8,68.4],[43.1,65.8],[41.5,63.3],[39.8,60.8],[38.2,58.3],[36.5,55.8],[34.9,53.3],[33.3,50.8],[31.6,48.3],[30.0,45.8],[28.3,43.3],[26.7,40.8],[25.0,38.3],[23.4,35.7],[21.8,33.2],[20.1,30.7],[18.5,28.2],[16.8,25.7],[15.2,23.2],[13.5,20.7],[11.9,18.2],[10.3,15.7],[8.6,13.1],[7.0,10.6],[5.3,8.1],[3.7,5.6],[2.1,3.1],[0.4,0.6],[-1.2,-1.9],[-2.8,-4.5],[-4.5,-7.0],[-6.1,-9.5],[-7.7,-12.0],[-9.4,-14.5],[-11.0,-17.1],[-12.6,-19.6],[-14.2,-22.1],[-15.8,-24.6],[-17.4,-27.2],[-19.0,-29.7],[-20.6,-32.2],[-22.3,-34.8],[-23.9,-37.3],[-25.5,-39.8],[-26.6,-41.6]],"walk_how":"街道の線（OSM）","walk_m":248,"appr":[[139.69157,35.77931],[139.69069,35.77989],[139.69143,35.78001],[139.68912,35.78322],[139.68738,35.78394],[139.6865,35.78485],[139.68489,35.78842],[139.68541,35.79147],[139.68598,35.79111],[139.68625,35.79166],[139.68638,35.79535],[139.68676,35.79532],[139.68683,35.79623],[139.68754,35.79619],[139.68757,35.79649],[139.68547,35.7964],[139.68427,35.80134],[139.68572,35.80161],[139.68562,35.80338],[139.68654,35.8035],[139.68636,35.80433],[139.68555,35.80422],[139.68531,35.80552],[139.68372,35.80531],[139.6832,35.80744],[139.6839,35.80749],[139.68337,35.8121],[139.68247,35.81267],[139.68136267642197,35.821399571395425]],"local":"web/local/nk02.json","talk":{"greet":["蕨宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["蕨という地名の由来の一つに、植物のワラビが多く生えていたから、という説があります。近くの青木、笹目、美女木なども、植物にちなむ地名とされます。"],"歴史":["宿ができたのは 1612 年とする説が有力です。土地の有力者の岡田氏が、本陣を務めました。","1843 年の調べでは、町並みは 10 町、およそ 1.1 キロ。宿の人口は 2,223 人でした。","「わらび」という地名がはじめて出てくるのは、1352 年の文書の「武蔵国蕨郷上下」です。"],"文化":["由来には、藁を焚く火、「藁火」という説もあって、どれが正しいかは決まっていません。"],"道":["ここは中山道の 2 番目の宿、蕨宿です。","日本橋から、いまの道に沿って測ると、およそ 20 キロ。わたしが計算した値です。","地面の標高は、およそ 4 メートル。前の板橋宿より、19 メートル低い所です。","次の浦和宿までは、およそ 5.5 キロです。"]},"look":["現地では、道ばたの植え込みに、シダのなかまの葉があるか見てください。なくてもかまいません。"],"end":["宿場の町並みは約 1.1 km と記録されています。本陣跡から、どこまでが宿だったかを歩いて測ってみてください。"]},"src":["wp:蕨宿"],"h":4.8},{"id":"nk04","name":"大宮宿","short":"大宮宿","group":"中山道","color":"#7a5c2e","ll":[139.626222,35.90875],"elev":14.3,"walk":[[42.7,194.3],[42.0,191.3],[41.4,188.4],[40.7,185.5],[40.1,182.6],[39.4,179.6],[38.8,176.7],[38.1,173.8],[37.5,170.8],[36.8,167.9],[36.2,165.0],[35.6,162.1],[34.9,159.1],[34.3,156.2],[33.6,153.3],[33.0,150.3],[32.3,147.4],[31.7,144.5],[31.0,141.5],[30.4,138.6],[29.7,135.7],[29.1,132.8],[28.4,129.8],[27.8,126.9],[27.2,124.0],[26.5,121.0],[25.9,118.1],[25.2,115.2],[24.6,112.2],[23.9,109.3],[23.3,106.4],[22.6,103.5],[22.0,100.5],[21.3,97.6],[20.7,94.7],[20.0,91.7],[19.4,88.8],[18.8,85.9],[18.1,83.0],[17.5,80.0],[16.8,77.1],[16.2,74.2],[15.5,71.2],[14.9,68.3],[14.2,65.4],[13.6,62.4],[13.0,59.5],[12.3,56.6],[11.7,53.6],[11.0,50.7],[10.4,47.8],[9.8,44.9],[9.1,41.9],[8.5,39.0],[7.8,36.1],[7.2,33.1],[6.6,30.2],[5.9,27.3],[5.3,24.3],[4.7,21.4],[4.0,18.5],[3.4,15.5],[2.8,12.6],[2.1,9.7],[1.5,6.7],[0.9,3.8],[0.3,0.9],[-0.4,-2.1],[-1.0,-5.0],[-1.6,-7.9],[-2.2,-10.9],[-2.8,-13.8],[-3.4,-16.7],[-4.0,-19.7],[-4.6,-22.6],[-5.2,-25.6],[-5.8,-28.5],[-6.4,-31.5],[-6.9,-34.4],[-7.5,-37.3],[-8.1,-40.3],[-8.7,-43.2],[-9.3,-46.2],[-9.8,-48.8]],"walk_how":"街道の線（OSM）","walk_m":249,"appr":[[139.65287,35.86158],[139.65021,35.86865],[139.64733,35.87231],[139.643,35.88075],[139.63519,35.89281],[139.62899,35.90079],[139.62761,35.90361],[139.62669513807788,35.90699301458968]],"local":"web/local/nk04.json","talk":{"greet":["大宮宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["はじめの街道は、氷川神社の一の鳥居から参道を通り、神社の前で折れて、回り込んでいました。"],"歴史":["宿の名は「氷川の大宮」、つまり氷川神社にちなみます。","1628 年、西の原野に新しい道を開き、宿場を参道沿いから移しました。","願い出の理由は、旅人を神社に参らせずに通らせるのは恐れ多いこと。道がまっすぐになって便利なこと。跡地を畑にすれば年貢が増えること、でした。","新しい道は、一の鳥居から北西へ、西寄りに分けて開かれました。"],"文化":["宿が置かれたのは 1591 年だと、脇本陣の栗原家に伝わっています。ただ、もう少し後ではないか、ともいわれます。"],"道":["ここは中山道の 4 番目の宿、大宮宿です。","日本橋から、いまの道に沿って測ると、およそ 32 キロ。わたしが計算した値です。","地面の標高は、およそ 14 メートル。前の浦和宿より、ほぼ同じ高さです。","次の上尾宿までは、およそ 8.9 キロです。"]},"look":["現地では、地図で、氷川の参道と中山道が分かれるあたりを探してください。"],"end":["あの欅の参道が、かつては街道でもあったと思って、もう一度歩いてみてください。"]},"src":["wp:大宮宿"],"h":13.9},{"id":"nk17","name":"坂本宿","short":"坂本宿","group":"中山道","color":"#7a5c2e","ll":[138.718139,36.34925],"elev":461.8,"walk":[[88.3,103.7],[86.3,101.5],[84.4,99.2],[82.4,96.9],[80.4,94.7],[78.5,92.4],[76.5,90.1],[74.6,87.9],[72.6,85.6],[70.6,83.3],[68.7,81.0],[66.7,78.8],[64.7,76.5],[62.8,74.2],[60.8,72.0],[58.9,69.7],[56.9,67.4],[54.9,65.2],[53.0,62.9],[51.0,60.6],[49.1,58.3],[47.1,56.1],[45.1,53.8],[43.2,51.5],[41.2,49.3],[39.2,47.0],[37.3,44.7],[35.3,42.5],[33.4,40.2],[31.4,37.9],[29.4,35.6],[27.5,33.4],[25.5,31.1],[23.6,28.8],[21.6,26.6],[19.6,24.3],[17.7,22.0],[15.7,19.7],[13.8,17.5],[11.8,15.2],[9.9,12.9],[7.9,10.7],[5.9,8.4],[4.0,6.1],[2.0,3.8],[0.1,1.5],[-1.9,-0.7],[-3.8,-3.0],[-5.8,-5.3],[-7.7,-7.6],[-9.6,-9.9],[-11.5,-12.2],[-13.3,-14.5],[-11.3,-12.3],[-9.2,-10.1],[-7.2,-7.9],[-6.8,-7.8],[-8.6,-10.1],[-10.6,-12.4],[-12.5,-14.7],[-14.4,-17.0],[-16.4,-19.3],[-18.3,-21.6],[-20.3,-23.9],[-22.2,-26.1],[-24.2,-28.4],[-26.1,-30.7],[-28.1,-33.0],[-30.0,-35.3],[-32.0,-37.5]],"walk_how":"街道の線（OSM）","walk_m":204,"appr":[[138.76677,36.32478],[138.76461,36.32588],[138.76301,36.3273],[138.76154,36.32743],[138.75977,36.32643],[138.75859,36.32653],[138.75653,36.3278],[138.75756,36.32679],[138.75585,36.3274],[138.74835,36.33369],[138.74494,36.33435],[138.74107,36.336],[138.7342,36.33726],[138.73242,36.33818],[138.72777,36.33903],[138.72758,36.34],[138.72702,36.34017],[138.72358,36.34413],[138.7191236464211,36.34831175432667]],"local":"web/local/nk17.json","talk":{"greet":["坂本宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["坂本宿は、碓氷峠の東の入口にあたる宿です。","中山道では、坂本宿から刎石山まで、水平に 700 メートル進むあいだに、標高差が 300 メートルあります。"],"歴史":["1843 年の『中山道宿村大概帳』では、本陣が 2、脇本陣が 2、旅籠が 40 でした。","横川駅から坂本宿へ向かう途中に、碓氷関所の跡があります。"],"文化":["国道 18 号の「坂本宿」としての道路の再整備は、土木学会デザイン賞 2017 の奨励賞を受けました。"],"道":["ここは中山道の 17 番目の宿、坂本宿です。","日本橋から、いまの道に沿って測ると、およそ 143 キロ。わたしが計算した値です。","地面の標高は、およそ 462 メートル。前の松井田宿より、187 メートル高い所です。","次の碓氷峠までは、およそ 8.2 キロです。"]},"look":["現地では、西を向いて、これから越える山の高さを目で測ってみてください。"],"end":[]},"src":["wp:坂本宿","wp:碓氷峠"],"h":463.7},{"id":"nk_toge","name":"碓氷峠","short":"碓氷峠","group":"中山道","color":"#7a5c2e","ll":[138.65621,36.36967],"elev":1207.2,"walk":[[124.4,-93.6],[122.8,-91.0],[121.1,-88.5],[119.5,-86.0],[117.9,-83.5],[116.3,-80.9],[114.6,-78.4],[113.0,-75.9],[111.4,-73.4],[109.8,-70.9],[108.2,-68.3],[106.5,-65.8],[104.9,-63.3],[103.3,-60.8],[101.7,-58.2],[100.0,-55.7],[98.4,-53.2],[96.8,-50.7],[95.2,-48.1],[93.5,-45.6],[91.9,-43.1],[90.3,-40.6],[88.7,-38.1],[87.1,-35.5],[85.4,-33.0],[83.8,-30.5],[82.2,-28.0],[80.6,-25.4],[78.9,-22.9],[77.3,-20.4],[75.7,-17.9],[73.9,-15.5],[71.9,-13.2],[70.0,-10.9],[68.1,-8.6],[66.2,-6.3],[64.3,-4.0],[62.3,-1.7],[60.4,0.6],[58.5,2.9],[56.3,5.0],[53.9,6.8],[51.5,8.6],[49.1,10.4],[46.7,12.2],[44.3,14.0],[41.9,15.7],[39.0,16.2],[36.0,16.7],[33.0,17.2],[30.1,17.7],[27.3,17.2],[24.8,15.6],[22.2,14.0],[19.7,12.4],[17.2,10.8],[14.6,9.2],[12.1,7.6],[9.5,6.0],[7.0,4.4],[4.5,2.8],[1.9,1.2],[0.0,-0.0]],"walk_how":"街道の線（OSM）","walk_m":185,"appr":[[138.70836,36.35921],[138.70908,36.35862],[138.70833,36.35871],[138.7066,36.35787],[138.70228,36.36042],[138.70102,36.36033],[138.69724,36.3628],[138.69528,36.36302],[138.69387,36.3643],[138.69341,36.36426],[138.6931,36.36362],[138.69147,36.36367],[138.68927,36.36569],[138.68924,36.3668],[138.68872,36.36716],[138.68785,36.36719],[138.68736,36.36679],[138.68571,36.36799],[138.68456,36.36816],[138.68308,36.369],[138.68065,36.36879],[138.67754,36.36992],[138.67651,36.37066],[138.67294,36.36906],[138.67096,36.36935],[138.66978,36.3691],[138.66734,36.37044],[138.6662,36.37166],[138.66281,36.37219],[138.66292,36.37158],[138.66184,36.37165],[138.66188,36.37008],[138.66021,36.37079],[138.65759760257097,36.370516144907164]],"local":"web/local/nk_toge.json","talk":{"greet":["碓氷峠です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["碓氷峠は、信濃川の水系と利根川の水系を分ける、中央分水嶺です。群馬県の側に降った雨は太平洋へ、長野県の側に降った雨は日本海へ流れます。","東の側だけが急な、「片勾配」の峠です。木は、ブナやコナラなどの落葉樹と、モミやカラマツなどの針葉樹です。"],"歴史":["1783 年の浅間山の噴火で、3 尺、およそ 90 センチ以上の砂が積もり、峠の往還は 8 日間、通れませんでした。","峠の頂に、熊野皇大神社があります。1292 年の鐘の銘から、このころまでに道が開かれていた、といわれます。"],"文化":["頂の熊野神社の境内に、碓氷峠を詠んだ句碑があります。"],"道":["ここは碓氷峠。中山道の、関東の区間の終わりです。","日本橋から、いまの道に沿って測ると、およそ 151 キロ。わたしが計算した値です。","地面の標高は、およそ 1207 メートル。前の坂本宿より、745 メートル高い所です。"]},"look":["現地では、足もとに落ちた雨粒が、どちらの斜面へ流れていくかを思い描いてください。"],"end":["日本橋からここまで、いくつの川を渡ってきたか思い出してみてください。ここから先は、水の行き先が変わります。"]},"src":["wp:碓氷峠"],"h":1206.4},{"id":"nik01","name":"千住宿","short":"千住宿","group":"日光","color":"#8a3b3b","ll":[139.802313,35.75069],"elev":1.4,"walk":[[4.6,156.0],[5.5,153.2],[6.5,150.3],[7.4,147.5],[8.3,144.6],[9.3,141.8],[10.2,138.9],[11.2,136.1],[12.1,133.2],[13.1,130.4],[14.0,127.5],[14.9,124.7],[15.9,121.8],[16.8,119.0],[17.8,116.1],[18.7,113.3],[19.6,110.5],[20.6,107.6],[21.5,104.8],[22.5,101.9],[23.4,99.1],[24.4,96.2],[25.3,93.4],[26.2,90.5],[27.2,87.7],[28.1,84.8],[29.1,82.0],[30.0,79.1],[30.9,76.3],[31.9,73.4],[32.8,70.6],[33.5,67.7],[34.1,64.7],[34.7,61.8],[35.3,58.8],[35.9,55.9],[36.5,53.0],[37.1,50.0],[37.7,47.1],[38.3,44.1],[38.5,41.2],[38.4,38.2],[38.4,35.2],[38.3,32.2],[38.2,29.2],[38.1,26.2],[38.0,23.2],[36.6,20.5],[35.1,17.9],[33.7,15.3],[32.2,12.7],[30.2,10.7],[27.4,9.7],[24.6,8.7],[21.8,7.7],[18.9,6.7],[16.1,5.7],[13.3,4.7],[13.1,4.7],[15.9,5.7],[18.7,6.6],[21.6,7.6],[24.4,8.6],[27.2,9.6],[30.1,10.6],[32.9,11.6],[35.7,12.6],[38.6,13.6],[41.4,14.6],[44.2,15.6],[46.9,16.5]],"walk_how":"街道の線（OSM）","walk_m":207,"appr":[[139.78928,35.70185],[139.79377,35.70565],[139.79594,35.70863],[139.79623,35.71087],[139.79768,35.71076],[139.80173,35.71512],[139.80187,35.72014],[139.80118,35.72542],[139.79837,35.73113],[139.79842,35.73171],[139.79811,35.7317],[139.79682,35.73645],[139.79632,35.73665],[139.79788,35.74125],[139.7984,35.74117],[139.80236362315327,35.74927895131978]],"local":"web/local/nik01.json","talk":{"greet":["千住宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["千住宿は、荒川、いまの隅田川が曲がって流れる所の、海抜 2 メートル前後の沖積低地にあります。","荒川、隅田川、綾瀬川が近くで合わさる、水運の便のよい場所でした。"],"歴史":["1594 年に隅田川に千住大橋が架けられ、1597 年に宿駅に指定されました。","日光街道と奥州街道の最初の宿で、水戸街道も、ここから分かれました。"],"文化":["1689 年、松尾芭蕉は深川を出て、見送りの人たちと千住で別れ、「行く春や鳥啼き魚の目は泪」を、旅の最初の句としました。『おくのほそ道』にあります。","品川宿、板橋宿、内藤新宿と並ぶ、江戸四宿の一つです。"],"道":["ここは日光街道の 1 番目の宿、千住宿です。","日本橋から、いまの道に沿って測ると、およそ 9.2 キロ。わたしが計算した値です。","地面の標高は、およそ 1 メートル。前の日本橋より、ほぼ同じ高さです。","次の草加宿までは、およそ 10 キロです。"]},"look":["現地では、千住大橋のたもとで、川の水面と、まわりの町の地面の高さを見比べてください。"],"end":["芭蕉の気持ちは、わたしには代わりに言えません。ただ、ここが川の道と陸の道の分かれ目だったことは、地図で確かめられます。"]},"src":["wp:千住宿"],"h":1.9},{"id":"nik02","name":"草加宿","short":"草加宿","group":"日光","color":"#8a3b3b","ll":[139.80645,35.83167],"elev":4.4,"walk":[[-18.0,198.1],[-17.7,195.1],[-17.4,192.1],[-17.2,189.1],[-16.9,186.1],[-16.6,183.1],[-16.4,180.2],[-16.1,177.2],[-15.8,174.2],[-15.5,171.2],[-15.3,168.2],[-15.0,165.2],[-14.7,162.2],[-14.5,159.2],[-14.2,156.3],[-13.9,153.3],[-13.6,150.3],[-13.4,147.3],[-13.1,144.3],[-12.8,141.3],[-12.6,138.3],[-12.3,135.3],[-12.0,132.3],[-11.8,129.4],[-11.5,126.4],[-11.2,123.4],[-10.9,120.4],[-10.7,117.4],[-10.4,114.4],[-10.1,111.4],[-9.9,108.4],[-9.6,105.5],[-9.3,102.5],[-9.0,99.5],[-8.8,96.5],[-8.5,93.5],[-8.2,90.5],[-8.0,87.5],[-7.7,84.5],[-7.4,81.6],[-7.1,78.6],[-6.9,75.6],[-6.6,72.6],[-6.3,69.6],[-6.1,66.6],[-5.8,63.6],[-5.6,60.6],[-5.3,57.6],[-5.1,54.7],[-4.8,51.7],[-4.6,48.7],[-4.3,45.7],[-4.0,42.7],[-3.8,39.7],[-3.5,36.7],[-3.3,33.7],[-3.0,30.7],[-2.8,27.8],[-2.6,24.8],[-2.4,21.8],[-2.1,18.8],[-1.9,15.8],[-1.7,12.8],[-1.4,9.8],[-1.2,6.8],[-1.0,3.8],[-0.8,0.8],[-0.6,-2.2],[-0.4,-5.2],[-0.2,-8.2],[-0.0,-11.1],[0.2,-14.1],[0.4,-17.1],[0.5,-20.1],[0.6,-23.1],[0.6,-26.1],[0.7,-29.1],[0.8,-32.1],[0.8,-35.1],[0.9,-38.1],[1.0,-41.1],[1.1,-44.1],[1.1,-47.1],[1.2,-49.7]],"walk_how":"街道の線（OSM）","walk_m":249,"appr":[[139.7975,35.7708],[139.79789,35.79568],[139.7975,35.80176],[139.79829,35.80281],[139.79791,35.80438],[139.80138,35.80668],[139.80631,35.82308],[139.80574,35.82529],[139.80625064759923,35.829878636173206]],"local":"web/local/nik02.json","talk":{"greet":["草加宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["1606 年、大川図書らが、いまの旧街道筋の低湿地を、土や柳の木、葦などの草で埋め固めて、千住と越ヶ谷をほぼ一直線に結ぶ道を築きました。","草加松原は、綾瀬川沿いにおよそ 1.5 キロ続く、クロマツの並木です。","松は一時 60 本あまりまで減りましたが、市民の保存会の植樹と手入れで、2008 年の 4 月には 633 本まで戻りました。"],"歴史":["松並木を植えた時期には、諸説あります。1792 年に苗木 1,230 本を植えたという史料が、確かめられるいちばん古い記録とされます。"],"文化":["草加は、『おくのほそ道』の旅の 1 日目に記されています。","草加松原は、2014 年 3 月 18 日、名勝「おくのほそ道の風景地」の、最初の指定の一つになりました。"],"道":["ここは日光街道の 2 番目の宿、草加宿です。","日本橋から、いまの道に沿って測ると、およそ 19 キロ。わたしが計算した値です。","地面の標高は、およそ 4 メートル。前の千住宿より、3 メートル高い所です。","次の越ヶ谷宿までは、およそ 7.8 キロです。"]},"look":["現地では、松並木で、松の幹の太さに違いがあるかを見てください。"],"end":["ここは昔、湿った低い土地でした。1606 年に土や柳や葦で固めて道を通したとされます。足もとの道の下を思ってみてください。"]},"src":["wp:おくのほそ道の風景地","wp:草加宿","wp:草加松原"],"h":3.5},{"id":"nik07","name":"栗橋宿","short":"栗橋宿","group":"日光","color":"#8a3b3b","ll":[139.702026,36.138424],"elev":10.3,"walk":[[164.5,-8.0],[163.5,-10.8],[162.4,-13.6],[161.4,-16.4],[160.3,-19.2],[159.3,-22.0],[158.2,-24.9],[157.2,-27.7],[156.2,-30.5],[155.0,-33.2],[152.2,-34.2],[149.4,-35.3],[146.6,-36.3],[143.8,-37.4],[140.8,-37.5],[137.8,-37.4],[134.8,-37.2],[131.8,-37.0],[128.8,-36.9],[125.8,-36.7],[122.8,-36.6],[119.9,-36.0],[117.0,-35.3],[114.1,-34.6],[111.1,-34.0],[108.2,-33.3],[105.3,-32.6],[102.4,-32.0],[99.4,-31.3],[96.5,-30.6],[93.6,-29.9],[90.7,-29.0],[87.9,-28.1],[85.0,-27.2],[82.2,-26.2],[79.3,-25.3],[76.5,-24.4],[73.6,-23.4],[70.8,-22.5],[67.9,-21.6],[65.1,-20.7],[62.2,-19.7],[59.4,-18.8],[56.5,-17.9],[53.7,-16.9],[50.8,-16.0],[47.9,-15.1],[45.1,-14.1],[42.2,-13.2],[39.4,-12.3],[36.5,-11.4],[33.7,-10.4],[30.8,-9.5],[28.0,-8.6],[25.1,-7.6],[22.3,-6.7],[19.4,-5.8],[19.8,-5.9],[22.7,-6.8],[25.5,-7.8],[28.4,-8.7],[31.2,-9.6],[34.1,-10.6],[36.9,-11.5],[39.8,-12.4],[42.6,-13.3],[45.5,-14.3],[47.9,-15.1]],"walk_how":"街道の線（OSM）","walk_m":198,"appr":[[139.72107,36.08965],[139.72087,36.09415],[139.7215,36.09634],[139.72111,36.09661],[139.72328,36.10563],[139.7238,36.11304],[139.72294,36.11478],[139.71955,36.11763],[139.7183,36.11983],[139.71211,36.12572],[139.71048,36.12601],[139.70882,36.12717],[139.70823,36.13019],[139.70685,36.1321],[139.70678,36.13291],[139.70601,36.13377],[139.70385582368735,36.13849618854802]],"local":"web/local/nik07.json","talk":{"greet":["栗橋宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["栗橋宿は、利根川を渡る所に置かれた宿です。対岸の中田宿とは、房川渡しという渡し船で結ばれていました。","利根川と権現堂川の分かれる所の近くに、1690 年、栗橋河岸ができました。"],"歴史":["1616 年に日光街道と奥州街道の道筋が付け替えられ、利根川を渡るための宿として成り立ちました。","対岸の中田宿とは合宿で、荷物と人足の継ぎ立ては、半月ごとの交代でした。","軍事上の理由で利根川に橋は架けられず、川沿いに房川渡中田関所が置かれた、とされます。"],"文化":["1843 年の記録では、人口 1,741 人、本陣 1、脇本陣 2、旅籠 25 でした。"],"道":["ここは日光街道の 7 番目の宿、栗橋宿です。","日本橋から、いまの道に沿って測ると、およそ 58 キロ。わたしが計算した値です。","地面の標高は、およそ 10 メートル。前の幸手宿より、ほぼ同じ高さです。","次の中田宿までは、およそ 1.5 キロです。"]},"look":["現地では、利根川の堤防の上に立ったら、対岸までの川幅を見てください。堤防の上では足もとに気をつけて。"],"end":["いまの橋を渡るとき、昔はここが船だったと思って、川幅をもう一度見てください。"]},"src":["wp:栗橋宿"],"h":12.5},{"id":"nik21","name":"鉢石宿","short":"鉢石宿","group":"日光","color":"#8a3b3b","ll":[139.607849,36.751476],"elev":581.3,"walk":[[91.8,159.1],[89.4,160.9],[87.0,162.7],[84.5,164.4],[82.0,166.1],[79.3,167.4],[76.5,168.2],[73.5,168.6],[70.5,168.5],[67.6,168.1],[64.6,167.6],[61.7,167.0],[58.8,166.3],[56.0,167.1],[53.7,169.1],[51.2,170.7],[48.3,171.4],[45.4,170.9],[43.0,169.1],[41.1,166.8],[39.5,164.3],[38.1,161.6],[36.9,158.9],[35.9,156.0],[34.4,153.4],[32.9,150.9],[31.2,148.4],[29.5,145.9],[27.7,143.5],[25.9,141.1],[24.1,138.7],[22.3,136.3],[20.5,133.9],[18.7,131.5],[16.8,129.2],[15.0,126.8],[13.1,124.4],[11.3,122.0],[9.5,119.7],[7.6,117.3],[5.8,114.9],[4.0,112.6],[2.1,110.2],[0.3,107.8],[-1.3,105.3],[-2.7,102.7],[-3.8,99.9],[-4.9,97.1],[-5.7,94.2],[-6.6,91.3],[-7.2,88.4],[-7.9,85.4],[-8.5,82.5],[-9.1,79.6],[-9.7,76.6],[-10.2,73.7],[-10.1,70.7],[-8.4,68.3],[-6.5,65.9],[-4.6,63.6],[-2.7,61.3],[-0.7,59.0],[1.2,56.7],[3.1,54.4],[5.0,52.0],[6.9,49.7],[8.8,47.4],[10.7,45.1],[12.5,42.7],[14.4,40.4],[16.3,38.0],[18.1,35.7],[20.0,33.3],[21.6,30.8],[21.4,27.9],[19.7,25.5],[17.4,23.6],[15.0,21.8],[12.6,20.0],[10.2,18.2],[7.9,16.3],[5.5,14.4],[3.2,12.5],[0.9,10.6]],"walk_how":"道の網（OSM）で宿へ","walk_m":249,"appr":[[139.69902,36.728233],[139.607849,36.751476],[139.6088785,36.7500368]],"local":"web/local/nik21.json","talk":{"greet":["鉢石宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["鉢石宿は、日光山内の入口、大谷川に架かる朱塗りの神橋のそばにあります。"],"歴史":["もとは鉢石村でした。1617 年に徳川家康が日光山に祀られ、日光への参詣が盛んになると、東照宮の門前町として栄えました。","1843 年の『日光道中宿村大概帳』では、本陣 2、旅籠 19、家の数 223、人口 985 でした。"],"文化":["神橋は重要文化財で、世界遺産「日光の社寺」をかたちづくる文化財の一つです。","神橋を境に、東を東町、または出町、西の山内を西町、または入町といいます。"],"道":["ここは日光街道の 21 番目の宿、鉢石宿です。","日本橋から、宿と宿を直線で結ぶ区間も含めて測ると、およそ 145 キロ。わたしが計算した値です。","地面の標高は、およそ 581 メートル。前の今市宿より、211 メートル高い所です。"]},"look":["現地では、神橋のあたりで、大谷川の水の色と流れの速さを見てください。"],"end":[]},"src":["wp:神橋","wp:鉢石宿"],"h":584.3},{"id":"ks01","name":"内藤新宿","short":"内藤新","group":"甲州","color":"#4f6b3a","ll":[139.709417,35.688806],"elev":33.5,"walk":[[144.3,38.8],[141.4,38.0],[138.5,37.3],[135.6,36.6],[132.7,35.8],[129.8,35.1],[126.9,34.4],[123.9,33.6],[121.0,32.9],[118.1,32.2],[115.2,31.5],[112.3,30.7],[109.4,30.0],[106.5,29.3],[103.6,28.5],[100.7,27.8],[97.8,27.1],[94.9,26.3],[91.9,25.6],[89.0,24.9],[86.1,24.2],[83.2,23.4],[80.3,22.7],[77.4,22.0],[74.5,21.2],[71.6,20.5],[68.7,19.8],[65.8,19.0],[62.8,18.3],[59.9,17.6],[57.0,16.8],[54.1,16.1],[51.2,15.4],[48.3,14.7],[45.4,13.9],[42.5,13.2],[39.6,12.5],[36.7,11.7],[33.8,11.0],[30.9,10.2],[27.9,9.5],[25.0,8.7],[22.1,8.0],[19.2,7.2],[16.3,6.5],[13.4,5.7],[10.5,5.0],[7.6,4.2],[4.7,3.4],[1.8,2.7],[-1.1,1.9],[-4.0,1.1],[-6.9,0.3],[-9.8,-0.5],[-12.6,-1.5],[-15.4,-2.5],[-12.7,-2.1],[-9.7,-1.8],[-7.6,-2.7],[-9.7,-4.8],[-12.3,-6.3],[-14.9,-7.8],[-17.5,-9.3],[-20.2,-10.6],[-22.9,-11.9],[-25.6,-13.3],[-28.3,-14.6],[-31.0,-15.9],[-33.7,-17.2],[-36.4,-18.6],[-39.0,-19.9],[-41.7,-21.2],[-44.4,-22.6]],"walk_how":"街道の線（OSM）","walk_m":215,"appr":[[139.76252,35.68371],[139.75958,35.67541],[139.75343,35.67796],[139.75103,35.67738],[139.74918,35.67766],[139.74751,35.67935],[139.74593,35.68003],[139.74448,35.68248],[139.74435,35.68413],[139.74142,35.68439],[139.73731,35.68403],[139.73488,35.68421],[139.73127,35.68574],[139.73167,35.68603],[139.73137,35.68627],[139.73107,35.6861],[139.72385,35.6891],[139.72332,35.68804],[139.72049,35.68817],[139.71557,35.68752],[139.71101318760253,35.68845545759948]],"local":"web/local/ks01.json","talk":{"greet":["内藤新宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["宿の中の新宿追分で、成木街道、いまの青梅街道が、甲州街道から分かれていました。"],"歴史":["甲州街道の最初の宿は、はじめ日本橋からおよそ 4 里の高井戸宿で、遠くて不便でした。","1697 年、浅草の名主、高松喜兵衛ら 5 人が新しい宿を願い出て、翌年、5,600 両の上納を条件に許されました。","場所は、いまの新宿区新宿一丁目から、二丁目、三丁目のあたりです。"],"文化":["品川宿、板橋宿、千住宿と並ぶ江戸四宿の一つで、四谷新宿とも呼ばれました。"],"道":["ここは甲州街道の 1 番目の宿、内藤新宿です。","日本橋から、いまの道に沿って測ると、およそ 8.2 キロ。わたしが計算した値です。","地面の標高は、およそ 34 メートル。前の日本橋より、29 メートル高い所です。","次の高井戸宿（下高井戸・上高井戸）までは、およそ 9.9 キロです。"]},"look":["現地では、地図で、甲州街道と青梅街道が分かれる所を探してください。"],"end":["「新宿」は、文字どおり「新しい宿」でした。そう思って、いまの街の名前を見直してみてください。"]},"src":["wp:内藤新宿"],"h":34.6},{"id":"ks09","name":"府中宿","short":"府中宿","group":"甲州","color":"#4f6b3a","ll":[139.47677,35.66988],"elev":55.1,"walk":[[200.2,-4.4],[197.2,-4.3],[194.2,-4.3],[191.2,-4.2],[188.2,-4.1],[185.2,-4.1],[182.2,-4.0],[179.2,-3.9],[176.2,-3.9],[173.2,-3.8],[170.2,-3.7],[167.2,-3.7],[164.2,-3.6],[161.2,-3.5],[158.2,-3.5],[155.2,-3.4],[152.2,-3.3],[149.2,-3.3],[146.2,-3.2],[143.2,-3.1],[140.2,-3.1],[137.2,-3.0],[134.2,-2.9],[131.2,-2.9],[128.2,-2.8],[125.2,-2.7],[122.2,-2.7],[119.2,-2.6],[116.2,-2.5],[113.2,-2.5],[110.2,-2.4],[107.2,-2.3],[104.2,-2.3],[101.2,-2.2],[98.2,-2.2],[95.2,-2.1],[92.2,-2.0],[89.2,-2.0],[86.2,-1.9],[83.2,-1.8],[80.2,-1.8],[77.2,-1.7],[74.2,-1.6],[71.2,-1.6],[68.2,-1.5],[65.2,-1.5],[62.2,-1.4],[59.2,-1.3],[56.2,-1.3],[53.2,-1.2],[50.2,-1.2],[47.2,-1.1],[44.2,-1.1],[41.2,-1.0],[38.2,-1.0],[35.2,-0.9],[32.2,-0.9],[29.2,-0.8],[26.2,-0.8],[23.2,-0.7],[20.2,-0.7],[17.2,-0.7],[14.2,-0.6],[11.2,-0.6],[8.2,-0.5],[5.2,-0.5],[2.2,-0.5],[-0.8,-0.4],[-3.8,-0.4],[-6.8,-0.4],[-9.8,-0.4],[-12.8,-0.4],[-15.8,-0.4],[-18.8,-0.4],[-21.8,-0.4],[-24.8,-0.5],[-27.8,-0.6],[-30.8,-0.6],[-33.8,-0.7],[-36.8,-0.7],[-39.8,-0.8],[-42.8,-0.9],[-45.8,-0.9],[-48.8,-1.0],[-50.0,-1.0]],"walk_how":"街道の線（OSM）","walk_m":250,"appr":[[139.54559,35.65268],[139.53399,35.65649],[139.53258,35.65766],[139.52364,35.66141],[139.5175,35.6649],[139.50968,35.6679],[139.50527,35.66881],[139.49847,35.66936],[139.47898347471792,35.66991964432331]],"local":"web/local/ks09.json","talk":{"greet":["府中宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["大國魂神社の馬場大門のケヤキ並木は、国の天然記念物です。"],"歴史":["府中は、国府と総社、大國魂神社のある、武蔵国の中心でした。宿は、六所明神、つまり大國魂神社を中心に、甲州街道沿いに発展しました。","鎌倉街道と甲州街道が交わる角に高札場があり、その向かいが本陣でした。","高札場は、めずらしく、いまも残っています。交通事故をきっかけに、斜め向かいへ、45 度回して移されました。"],"文化":["宿は、番場、本町、新宿の、府中三町からなっていました。"],"道":["ここは甲州街道の 9 番目の宿、府中宿です。","日本橋から、いまの道に沿って測ると、およそ 32 キロ。わたしが計算した値です。","地面の標高は、およそ 55 メートル。前の布田五宿（国領・下布田・上布田・下石原・上石原）より、19 メートル高い所です。","次の日野宿までは、およそ 8.5 キロです。"]},"look":["現地では、大國魂神社へ向かうケヤキ並木で、幹の太さと根もとを見てください。"],"end":["高札場は、お触れを掲げた場所です。まわりの掲示や看板と見比べてみてください。"]},"src":["wp:府中宿 (甲州街道)"],"h":55.1},{"id":"ks12","name":"駒木野宿","short":"駒木野","group":"甲州","color":"#4f6b3a","ll":[139.26598,35.64144],"elev":198.3,"walk":[[172.8,27.7],[169.8,27.0],[166.9,26.3],[164.0,25.6],[161.1,24.9],[158.2,24.1],[155.3,23.4],[152.3,22.7],[149.4,22.0],[146.5,21.3],[143.6,20.6],[140.7,19.9],[137.8,19.2],[134.9,18.5],[131.9,17.8],[129.0,17.1],[126.1,16.4],[123.2,15.7],[120.3,15.0],[117.3,14.3],[114.4,13.8],[111.4,13.3],[108.5,12.8],[105.5,12.3],[102.6,11.8],[99.6,11.3],[96.6,10.8],[93.7,10.5],[90.7,10.2],[87.7,9.8],[84.7,9.5],[81.7,9.2],[78.7,8.9],[75.8,8.6],[72.8,8.3],[69.8,8.2],[66.8,8.1],[63.8,8.0],[60.8,7.9],[57.8,7.8],[54.8,7.7],[51.8,7.5],[48.8,7.5],[45.8,7.6],[42.8,7.6],[39.8,7.7],[36.8,7.8],[33.8,7.8],[30.8,7.9],[27.8,8.0],[24.8,8.0],[21.8,8.0],[18.8,8.0],[15.8,7.9],[12.8,7.9],[9.8,7.9],[6.8,7.8],[3.8,7.6],[0.8,7.3],[-2.2,7.1],[-5.0,6.2],[-5.9,4.8],[-4.5,2.9],[-7.4,2.9],[-10.3,3.3],[-13.3,4.1],[-16.2,4.8],[-19.1,5.5],[-21.9,6.4],[-24.8,7.2],[-27.7,8.1],[-30.6,8.9],[-33.5,9.7],[-36.3,10.6],[-39.2,11.4],[-42.1,12.3],[-45.0,13.1],[-47.9,13.9]],"walk_how":"街道の線（OSM）","walk_m":229,"appr":[[139.33126,35.66013],[139.31841,35.66094],[139.30643,35.65492],[139.30604,35.65543],[139.29587,35.64869],[139.29111,35.647],[139.287,35.64671],[139.28467,35.64477],[139.2815,35.64289],[139.2744,35.64161],[139.27294,35.64043],[139.26788954476714,35.641189634550216]],"local":"web/local/ks12.json","talk":{"greet":["駒木野宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["駒木野宿は、高尾山と小仏峠のふもとにあります。小仏峠は、武蔵と相模の国境です。"],"歴史":["小仏関所は、戦国時代に北条氏照が小仏峠に置き、1580 年に、東の駒木野、いまの八王子市裏高尾町へ移されました。","関所は、鉄砲と女性の通行を取り締まりました。1869 年に廃止されました。"],"文化":["1928 年 1 月 18 日、「小仏関跡」として、国の史跡に指定されました。"],"道":["ここは甲州街道の 12 番目の宿、駒木野宿です。","日本橋から、いまの道に沿って測ると、およそ 54 キロ。わたしが計算した値です。","地面の標高は、およそ 198 メートル。前の八王子宿より、82 メートル高い所です。","次の小仏峠までは、およそ 5.8 キロです。"]},"look":["現地では、関所跡のあたりで、谷の幅と、両側の山の迫り方を見てください。"],"end":["なぜ関所を谷の狭い所に置いたのか、地形を見ながら考えてみてください。"]},"src":["wp:小仏関所"],"h":196.8},{"id":"ks13","name":"小原宿","short":"小原宿","group":"甲州","color":"#4f6b3a","ll":[139.20023,35.6218],"elev":202.6,"walk":[[119.3,-111.0],[117.0,-109.1],[114.7,-107.1],[112.4,-105.2],[110.1,-103.3],[107.8,-101.4],[105.5,-99.4],[103.2,-97.5],[100.9,-95.6],[98.6,-93.7],[96.3,-91.7],[94.0,-89.8],[91.9,-87.7],[89.9,-85.4],[87.9,-83.2],[85.9,-80.9],[83.9,-78.7],[82.1,-76.3],[80.3,-73.9],[78.6,-71.5],[76.9,-69.0],[75.1,-66.6],[73.4,-64.1],[71.7,-61.6],[70.2,-59.1],[68.6,-56.5],[67.1,-53.9],[65.6,-51.3],[64.0,-48.7],[62.5,-46.2],[61.0,-43.6],[59.6,-40.9],[58.3,-38.2],[56.9,-35.6],[55.5,-32.9],[54.1,-30.2],[52.8,-27.6],[51.4,-24.9],[50.0,-22.2],[48.6,-19.6],[47.1,-17.0],[45.7,-14.3],[44.2,-11.7],[42.8,-9.1],[41.3,-6.5],[39.8,-3.9],[38.2,-1.3],[36.7,1.2],[35.1,3.8],[33.5,6.3],[31.7,8.8],[29.9,11.1],[28.1,13.5],[26.0,15.6],[23.5,17.4],[20.7,18.1],[17.8,18.0],[14.9,17.1],[12.6,15.3],[10.3,13.3],[8.5,10.9],[6.6,8.6],[4.8,6.2],[5.6,7.2],[7.5,9.6],[9.3,12.0],[11.0,14.4],[12.2,17.2],[12.7,20.1],[12.5,23.0],[10.8,25.5],[8.5,27.4],[5.9,28.9],[3.4,30.5],[0.8,32.0],[-1.6,33.4]],"walk_how":"街道の線（OSM）","walk_m":223,"appr":[[139.21667,35.63556],[139.21529,35.63435],[139.21536,35.63392],[139.21471,35.63418],[139.21454,35.63387],[139.21436,35.63419],[139.21289,35.63333],[139.21206,35.63369],[139.21204,35.63409],[139.21131,35.63369],[139.20954,35.63397],[139.2101,35.63339],[139.20893,35.63361],[139.20932,35.6334],[139.20739,35.6329],[139.20726,35.63336],[139.20707,35.63271],[139.20799,35.63235],[139.20676,35.63281],[139.20646,35.63209],[139.20519,35.63151],[139.20353,35.63294],[139.20401,35.62978],[139.20386,35.62739],[139.20348,35.62594],[139.20209,35.62443],[139.20154822738715,35.62280385437477]],"local":"web/local/ks13.json","talk":{"greet":["小原宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["小原宿は、難所の小仏峠の甲府側にある、東西 2 町半、およそ 270 メートルの小さな宿です。"],"歴史":["西どなりの与瀬宿と、片継ぎの宿でした。江戸から来た荷物は、与瀬を越えて吉野宿へ継ぎました。","本陣は清水家。信州の諏訪藩、高遠藩、飯田藩の大名と、甲府勤番の役人が使いました。"],"文化":["いまの神奈川県にあった本陣は、東海道と甲州街道で 26 軒ありましたが、建物が残るのは小原宿本陣だけです。1996 年 2 月 13 日に、神奈川県の重要文化財に指定されました。"],"道":["ここは甲州街道の 13 番目の宿、小原宿です。","日本橋から、いまの道に沿って測ると、およそ 64 キロ。わたしが計算した値です。","地面の標高は、およそ 203 メートル。前の小仏峠より、346 メートル低い所です。","次の与瀬宿までは、およそ 2.2 キロです。"]},"look":["現地では、本陣の大きな屋根の形を、少し離れた所から見てください。"],"end":["宿の長さは約 270 m。小仏峠を越えてきた旅人の歩幅で、端から端まで歩いて確かめてみてください。"]},"src":["wp:小原宿"],"h":207.4},{"id":"os25","name":"芦野宿","short":"芦野宿","group":"奥州","color":"#3b4f8a","ll":[140.167633,36.990063],"elev":315.7,"walk":[[-227.1,-169.2],[-225.4,-171.7],[-223.8,-174.2],[-222.1,-176.7],[-220.5,-179.2],[-218.8,-181.7],[-217.1,-184.2],[-215.5,-186.7],[-213.8,-189.2],[-212.1,-191.7],[-210.5,-194.2],[-208.8,-196.7],[-207.2,-199.2],[-205.5,-201.7],[-203.8,-204.2],[-202.2,-206.7],[-200.5,-209.2],[-198.8,-211.7],[-197.2,-214.2],[-195.5,-216.7],[-193.9,-219.2],[-192.2,-221.7],[-190.5,-224.2],[-188.9,-226.7],[-187.2,-229.2],[-185.5,-231.6],[-183.9,-234.1],[-182.2,-236.6],[-180.6,-239.1],[-178.9,-241.6],[-177.2,-244.1],[-175.6,-246.6],[-173.9,-249.1],[-172.2,-251.6],[-170.6,-254.1],[-168.2,-255.8],[-165.6,-257.4],[-163.0,-259.0],[-160.2,-259.7],[-157.2,-259.8],[-154.2,-259.9],[-151.3,-259.8],[-148.4,-258.7],[-145.6,-257.7],[-142.8,-256.7],[-140.0,-255.6],[-137.5,-254.0],[-135.0,-252.3],[-132.5,-250.7],[-130.0,-249.0],[-127.5,-247.4],[-125.0,-245.7],[-122.5,-244.1],[-120.0,-242.4],[-117.5,-240.7],[-115.0,-239.1],[-112.5,-237.4],[-110.0,-235.7],[-107.5,-234.0],[-105.1,-232.3],[-102.6,-230.6],[-100.2,-228.9],[-97.7,-227.1],[-95.4,-225.3],[-93.0,-223.4],[-91.1,-221.1],[-90.4,-218.2],[-91.0,-215.2],[-91.7,-212.3],[-92.4,-209.4],[-93.2,-206.5],[-94.0,-203.6],[-94.9,-200.8],[-95.6,-197.9],[-96.4,-195.0],[-97.1,-192.0],[-97.6,-189.1],[-97.2,-186.2],[-95.7,-183.6],[-93.4,-181.7],[-90.8,-180.2],[-88.0,-179.1],[-85.2,-178.0],[-82.4,-177.0],[-79.5,-176.0],[-76.7,-175.1],[-73.8,-174.1],[-71.0,-173.2],[-68.1,-172.2],[-65.3,-171.3],[-62.4,-170.4],[-61.6,-170.2]],"walk_how":"道の網（OSM）で宿へ","walk_m":271,"appr":[[140.098679,36.955307],[140.167633,36.990063],[140.1650789,36.9915933]],"local":"web/local/os25.json","talk":{"greet":["芦野宿です。ここで、待っていました。","いっしょに、少し歩きましょう。"],"L":{"自然":["那須湯本から那須野が原を通ってきた芭蕉が、立ち寄った所です。宿の南北の端は、新町の高橋から川原町の芦野橋まで、およそ 1 キロです。"],"歴史":["奥州街道で、関東のいちばん北の宿です。東北から見れば、関東の入口にあたります。","参勤交代で通った大名は 33 家。1669 年 3 月 21 日の火事で、伝馬役の家 72 軒が焼けたという記録があります。"],"文化":["芭蕉は、遊行柳の前で「田一枚植えて立ち去る柳かな」と詠んだとされます。","遊行柳、清水流るるの柳は、2015 年 3 月 10 日、名勝「おくのほそ道の風景地」に追加指定されました。"],"道":["ここは奥州街道の 25 番目の宿、芦野宿です。","日本橋から、宿と宿を直線で結ぶ区間も含めて測ると、およそ 167 キロ。わたしが計算した値です。","地面の標高は、およそ 316 メートル。前の越堀宿より、64 メートル高い所です。"]},"look":["現地では、遊行柳のまわりの土地が、いま何に使われているかを見てください。"],"end":[]},"src":["wp:おくのほそ道の風景地","wp:芦野宿"],"h":314.7}],"intro":["わたしは碧。土地に残された記録を受けとって、あなたに手渡す、依代です。","ここは、関東の五つの街道を、上から見た地形です。日本橋から、東海道、中山道、日光街道、甲州街道、奥州街道がのびています。","行きたい宿を、ひとつ選んでください。わたしは先に行って、そこで待っています。"],"again":["また、上から見ましょう。次は、どこへ行きますか。"],"bye":["ここまで、いっしょに歩いてくれて、ありがとう。"],"thin":"この場所の{L}の話は、わたしはまだ確かめられていません。かわりに、道の話をしますね。","layer_intro":{"自然":"自然の話をします。地形と、水と、木の話です。","歴史":"歴史の話をします。道と、人の営みの話です。","文化":"文化の話をします。名前と、ことばと、祈りの話です。","道":"道の話をします。道のりと、高さの話です。"},"voice":{"start_0":{"f":"web/voice/6be4db11ba23.m4a","dur":4.34},"start_1":{"f":"web/voice/44377c60fd5f.m4a","dur":5.55},"start_2":{"f":"web/voice/6950d4724fbb.m4a","dur":8.41},"tk01_0":{"f":"web/voice/32d355a968c5.m4a","dur":5.44},"tk01_1":{"f":"web/voice/e748ed31167d.m4a","dur":10.15},"tk01_2":{"f":"web/voice/fce3416aae77.m4a","dur":5.85},"tk02_0":{"f":"web/voice/0a3c550a79e2.m4a","dur":5.62},"tk02_1":{"f":"web/voice/90c370882b50.m4a","dur":4.47},"tk02_2":{"f":"web/voice/311e8de5d8f8.m4a","dur":3.1},"tk03_0":{"f":"web/voice/b7f9b3f67716.m4a","dur":5.46},"tk03_1":{"f":"web/voice/fd3ba8b8416c.m4a","dur":4.65},"tk03_2":{"f":"web/voice/152522d67393.m4a","dur":3.22},"tk04_0":{"f":"web/voice/b1c958ef084a.m4a","dur":5.78},"tk04_1":{"f":"web/voice/c7f2511f80ba.m4a","dur":4.59},"tk04_2":{"f":"web/voice/2f6cc27d123d.m4a","dur":3.09},"tk05_0":{"f":"web/voice/e5f4b0cf43ee.m4a","dur":5.94},"tk05_1":{"f":"web/voice/72e4012ba1b0.m4a","dur":4.39},"tk05_2":{"f":"web/voice/ad77d8fe5b05.m4a","dur":3.14},"tk06_0":{"f":"web/voice/78887355abaf.m4a","dur":5.67},"tk06_1":{"f":"web/voice/0984e982e551.m4a","dur":4.61},"tk06_2":{"f":"web/voice/d0ca07954b74.m4a","dur":3.42},"tk07_0":{"f":"web/voice/ecc23b2b2707.m4a","dur":5.6},"tk07_1":{"f":"web/voice/34eff0622f26.m4a","dur":4.6},"tk07_2":{"f":"web/voice/000037331ac9.m4a","dur":3.17},"tk08_0":{"f":"web/voice/b023a42b87ee.m4a","dur":5.62},"tk08_1":{"f":"web/voice/a72421f07c04.m4a","dur":4.49},"tk08_2":{"f":"web/voice/813ca57967a3.m4a","dur":3.35},"tk09_0":{"f":"web/voice/d12a06a1cb85.m4a","dur":5.42},"tk09_1":{"f":"web/voice/e84ae0eb0584.m4a","dur":4.55},"tk09_2":{"f":"web/voice/f635fceb5088.m4a","dur":3.2},"tk10_0":{"f":"web/voice/1af81b2319de.m4a","dur":4.19},"tk10_1":{"f":"web/voice/820944589c84.m4a","dur":12.87},"tk10_2":{"f":"web/voice/1b32c5887ff7.m4a","dur":7.87},"tk_toge_0":{"f":"web/voice/86ab7a3b709a.m4a","dur":6.98},"tk_toge_1":{"f":"web/voice/c5c76314b271.m4a","dur":4.37},"tk_toge_2":{"f":"web/voice/9cbc0a4350e0.m4a","dur":7.84},"nk01_0":{"f":"web/voice/452c264c0d94.m4a","dur":6.12},"nk01_1":{"f":"web/voice/ebd8fc193793.m4a","dur":4.6},"nk01_2":{"f":"web/voice/25d1175f8b64.m4a","dur":3.08},"nk02_0":{"f":"web/voice/f9a82c83bbe8.m4a","dur":5.38},"nk02_2":{"f":"web/voice/21704c59e1e8.m4a","dur":8.5},"nk03_0":{"f":"web/voice/0a3a820294fd.m4a","dur":5.79},"nk03_1":{"f":"web/voice/e5c5b19b6a30.m4a","dur":4.5},"nk03_2":{"f":"web/voice/9a5aa006f759.m4a","dur":3.15},"nk04_0":{"f":"web/voice/2905a03f35bf.m4a","dur":4.63},"nk04_1":{"f":"web/voice/15ea14fc02e8.m4a","dur":10.39},"nk04_2":{"f":"web/voice/f4d0065623fd.m4a","dur":5.9},"nk05_0":{"f":"web/voice/2f0c2f9a945e.m4a","dur":5.89},"nk05_1":{"f":"web/voice/386654161299.m4a","dur":4.38},"nk05_2":{"f":"web/voice/9dd1d693fcba.m4a","dur":3.18},"nk06_0":{"f":"web/voice/877f13e314cc.m4a","dur":5.69},"nk06_1":{"f":"web/voice/708f2083b352.m4a","dur":4.65},"nk06_2":{"f":"web/voice/022bb93e5a65.m4a","dur":3.16},"nk07_0":{"f":"web/voice/4045a5568066.m4a","dur":6.02},"nk07_1":{"f":"web/voice/6732a6bf4950.m4a","dur":4.61},"nk07_2":{"f":"web/voice/28b819286856.m4a","dur":3.43},"nk08_0":{"f":"web/voice/972e407c3a13.m4a","dur":5.88},"nk08_1":{"f":"web/voice/32a60e8b9374.m4a","dur":4.68},"nk08_2":{"f":"web/voice/d23c3b8418a4.m4a","dur":3.18},"nk09_0":{"f":"web/voice/3bd5171017ec.m4a","dur":6.21},"nk09_1":{"f":"web/voice/9d008f806524.m4a","dur":4.52},"nk09_2":{"f":"web/voice/982df5b42815.m4a","dur":3.3},"nk10_0":{"f":"web/voice/db24311274db.m4a","dur":6.22},"nk10_1":{"f":"web/voice/d6d89b06dedb.m4a","dur":4.62},"nk10_2":{"f":"web/voice/2e4a761a08ef.m4a","dur":3.2},"nk11_0":{"f":"web/voice/7bd9e0c3fe83.m4a","dur":6.03},"nk11_1":{"f":"web/voice/cc02136ab2d3.m4a","dur":4.83},"nk11_2":{"f":"web/voice/6f49c5f5075e.m4a","dur":3.23},"nk12_0":{"f":"web/voice/a17de699a8a1.m4a","dur":6.25},"nk12_1":{"f":"web/voice/d4482294383a.m4a","dur":4.76},"nk12_2":{"f":"web/voice/160f50486167.m4a","dur":3.24},"nk13_0":{"f":"web/voice/985856ad83c1.m4a","dur":6.37},"nk13_1":{"f":"web/voice/d5fb9e9a393a.m4a","dur":4.87},"nk13_2":{"f":"web/voice/5683b123aa68.m4a","dur":3.06},"nk14_0":{"f":"web/voice/7f96b15dfca9.m4a","dur":6.45},"nk14_1":{"f":"web/voice/943681e4c7cb.m4a","dur":4.81},"nk14_2":{"f":"web/voice/d3fe513d6225.m4a","dur":3.05},"nk15_0":{"f":"web/voice/2a224ef67ea9.m4a","dur":6.7},"nk15_1":{"f":"web/voice/8bb3dbfb3418.m4a","dur":4.67},"nk15_2":{"f":"web/voice/4034fcd34488.m4a","dur":3.18},"nk16_0":{"f":"web/voice/6b34386fcb2c.m4a","dur":7.0},"nk16_1":{"f":"web/voice/ffcb50904331.m4a","dur":4.86},"nk16_2":{"f":"web/voice/7f3fa2390d50.m4a","dur":3.2},"nk17_0":{"f":"web/voice/bac5bc8c7710.m4a","dur":4.25},"nk17_2":{"f":"web/voice/e021d9e2af08.m4a","dur":5.12},"nk_toge_0":{"f":"web/voice/028ab61aa7fd.m4a","dur":5.1},"nk_toge_1":{"f":"web/voice/602c5b36129c.m4a","dur":8.6},"nk_toge_2":{"f":"web/voice/8a7efb5e42f7.m4a","dur":7.9},"nik01_0":{"f":"web/voice/20dba4a8e4d8.m4a","dur":6.19},"nik01_1":{"f":"web/voice/120df1645498.m4a","dur":4.64},"nik01_2":{"f":"web/voice/93a4611b0788.m4a","dur":8.81},"nik02_0":{"f":"web/voice/eda6b11622dc.m4a","dur":4.03},"nik02_1":{"f":"web/voice/fc2d58d2708c.m4a","dur":11.14},"nik02_2":{"f":"web/voice/9cec45b8fbd5.m4a","dur":7.4},"nik03_0":{"f":"web/voice/f3467c3260d6.m4a","dur":5.39},"nik03_1":{"f":"web/voice/52593d338d4e.m4a","dur":4.83},"nik03_2":{"f":"web/voice/ede751d24ae3.m4a","dur":3.21},"nik04_0":{"f":"web/voice/215591c1ea1a.m4a","dur":5.66},"nik04_1":{"f":"web/voice/5556866513f3.m4a","dur":4.8},"nik04_2":{"f":"web/voice/cd56c52cd273.m4a","dur":2.99},"nik05_0":{"f":"web/voice/5cb04d2c09ea.m4a","dur":5.53},"nik05_1":{"f":"web/voice/7aaa1fe6e265.m4a","dur":4.63},"nik05_2":{"f":"web/voice/d97dc9ce6e7f.m4a","dur":2.95},"nik06_0":{"f":"web/voice/83470c832360.m4a","dur":5.42},"nik06_1":{"f":"web/voice/645a808783e7.m4a","dur":4.67},"nik06_2":{"f":"web/voice/5bd823f71701.m4a","dur":3.23},"nik07_0":{"f":"web/voice/6a1480baa499.m4a","dur":7.09},"nik07_1":{"f":"web/voice/757a3fe81015.m4a","dur":10.6},"nik07_2":{"f":"web/voice/fc1d6c758a27.m4a","dur":6.14},"nik08_0":{"f":"web/voice/53eaca9501ed.m4a","dur":5.79},"nik09_2":{"f":"web/voice/4f4bef60d8e2.m4a","dur":3.0},"nik10_1":{"f":"web/voice/00fa5263ec8a.m4a","dur":4.55},"nik11_0":{"f":"web/voice/4553145faf07.m4a","dur":5.8},"nik11_2":{"f":"web/voice/44a9c67d064d.m4a","dur":3.06},"nik12_1":{"f":"web/voice/cf02878240a8.m4a","dur":4.75},"nik13_0":{"f":"web/voice/2a26daff4bea.m4a","dur":6.23},"nik13_2":{"f":"web/voice/4b1be3c40c5d.m4a","dur":3.15},"nik14_1":{"f":"web/voice/54d5d1e2b6b6.m4a","dur":5.0},"nik14_2":{"f":"web/voice/7c314ff6da5b.m4a","dur":3.15},"nik15_0":{"f":"web/voice/99c2344ac0d2.m4a","dur":6.4},"nik15_1":{"f":"web/voice/bb6461b66900.m4a","dur":4.84},"nik15_2":{"f":"web/voice/0cd916cd47bb.m4a","dur":3.42},"nik16_0":{"f":"web/voice/8c012aa0eba1.m4a","dur":6.35},"nik16_1":{"f":"web/voice/3efe7c2429c0.m4a","dur":5.25},"nik16_2":{"f":"web/voice/b119a8b7eba7.m4a","dur":3.21},"nik17_0":{"f":"web/voice/684f788413df.m4a","dur":6.56},"nik17_1":{"f":"web/voice/3a5712ff4574.m4a","dur":5.12},"nik17_2":{"f":"web/voice/bf2667e17036.m4a","dur":3.2},"nik18_0":{"f":"web/voice/802514a0e3f0.m4a","dur":6.91},"nik18_1":{"f":"web/voice/45de8a55a022.m4a","dur":5.09},"nik19_0":{"f":"web/voice/f4f9d609f4ba.m4a","dur":6.92},"nik19_2":{"f":"web/voice/7d0cb20ef42d.m4a","dur":3.15},"nik20_1":{"f":"web/voice/1a596a10b720.m4a","dur":4.8},"nik20_2":{"f":"web/voice/4e98b34e0e86.m4a","dur":3.07},"nik21_0":{"f":"web/voice/a66f4ad4a484.m4a","dur":4.62},"nik21_1":{"f":"web/voice/7c8fdd485660.m4a","dur":11.74},"nik21_2":{"f":"web/voice/6e1953d617c1.m4a","dur":4.63},"nik_end_0":{"f":"web/voice/9f7c95dfe493.m4a","dur":6.34},"nik_end_1":{"f":"web/voice/05f11e86127c.m4a","dur":4.91},"nik_end_2":{"f":"web/voice/dffe6c0f4fbe.m4a","dur":5.94},"ks01_0":{"f":"web/voice/27db304297cc.m4a","dur":4.53},"ks01_1":{"f":"web/voice/e787ba16682e.m4a","dur":10.83},"ks01_2":{"f":"web/voice/245fee55bd10.m4a","dur":8.17},"ks02_0":{"f":"web/voice/f8e82bb102f0.m4a","dur":6.5},"ks02_2":{"f":"web/voice/6ad9afec8dbd.m4a","dur":3.08},"ks04_1":{"f":"web/voice/405f3ff23acf.m4a","dur":5.21},"ks04_2":{"f":"web/voice/4da5b7d97420.m4a","dur":3.09},"ks09_0":{"f":"web/voice/0e0a456bfe52.m4a","dur":4.74},"ks09_1":{"f":"web/voice/071525564af3.m4a","dur":10.69},"ks09_2":{"f":"web/voice/c0a187808604.m4a","dur":6.02},"ks10_0":{"f":"web/voice/2fda8410aea0.m4a","dur":6.31},"ks10_1":{"f":"web/voice/8e26b7bb56e7.m4a","dur":4.59},"ks10_2":{"f":"web/voice/07c18f4ae048.m4a","dur":3.27},"ks11_0":{"f":"web/voice/68e080c87c05.m4a","dur":6.36},"ks11_1":{"f":"web/voice/bc108d49b62e.m4a","dur":5.12},"ks12_0":{"f":"web/voice/5234eff71516.m4a","dur":5.25},"ks12_2":{"f":"web/voice/bc1486bff3b8.m4a","dur":5.11},"ks_toge_1":{"f":"web/voice/06d61803423d.m4a","dur":4.7},"ks_toge_2":{"f":"web/voice/b526b086020d.m4a","dur":3.06},"ks13_0":{"f":"web/voice/d5f2307ea4c2.m4a","dur":4.34},"ks13_1":{"f":"web/voice/ee20452734c7.m4a","dur":6.94},"ks13_2":{"f":"web/voice/4401f383b769.m4a","dur":8.59},"ks14_0":{"f":"web/voice/703de226f0a9.m4a","dur":5.92},"ks15_2":{"f":"web/voice/53035f91599e.m4a","dur":3.1},"ks16_1":{"f":"web/voice/b76da5eb3471.m4a","dur":4.94},"ks16_2":{"f":"web/voice/1e95c94e213e.m4a","dur":8.92},"os18_0":{"f":"web/voice/0a8a64ed9131.m4a","dur":6.49},"os18_1":{"f":"web/voice/9baf24f3162b.m4a","dur":5.07},"os18_2":{"f":"web/voice/dbabd1454519.m4a","dur":3.14},"os19_0":{"f":"web/voice/d78966fcbcfe.m4a","dur":6.43},"os19_1":{"f":"web/voice/90fa8e076d1a.m4a","dur":4.92},"os19_2":{"f":"web/voice/951dbd771964.m4a","dur":3.2},"os20_0":{"f":"web/voice/4e6dc7123c43.m4a","dur":6.57},"os20_1":{"f":"web/voice/05d2ce2efe76.m4a","dur":4.96},"os20_2":{"f":"web/voice/1f3ef954f920.m4a","dur":3.18},"os21_0":{"f":"web/voice/ad7be8c9acc5.m4a","dur":6.91},"os21_1":{"f":"web/voice/dadb3dfc5a19.m4a","dur":5.1},"os21_2":{"f":"web/voice/06fe1b4860a5.m4a","dur":3.21},"os22_0":{"f":"web/voice/4e21edd42394.m4a","dur":6.14},"os22_1":{"f":"web/voice/11d6655bc2f9.m4a","dur":4.99},"os22_2":{"f":"web/voice/e70b36f4a836.m4a","dur":3.2},"os23_0":{"f":"web/voice/027496d318fd.m4a","dur":6.88},"os23_1":{"f":"web/voice/bfa8e5c572b6.m4a","dur":5.1},"os23_2":{"f":"web/voice/7e65075c65e2.m4a","dur":3.15},"os24_0":{"f":"web/voice/d38b7d9460b3.m4a","dur":6.29},"os24_1":{"f":"web/voice/31e2e98aa54b.m4a","dur":5.06},"os24_2":{"f":"web/voice/84d09bf5e74d.m4a","dur":3.0},"os25_0":{"f":"web/voice/c8e8ea7e90bf.m4a","dur":4.39},"os25_2":{"f":"web/voice/5dde95ae4e23.m4a","dur":7.84}},"sources":[{"label":"Wikipedia「内藤新宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=107195907"},{"label":"Wikipedia「日本橋 (東京都中央区の橋)」","url":"https://ja.wikipedia.org/w/index.php?oldid=110033388"},{"label":"Wikipedia「品川宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=109208030"},{"label":"Wikipedia「箱根宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=92967814"},{"label":"Wikipedia「箱根関」","url":"https://ja.wikipedia.org/w/index.php?oldid=110304466"},{"label":"Wikipedia「蕨宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=110898985"},{"label":"Wikipedia「大宮宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=108496450"},{"label":"Wikipedia「坂本宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=110942593"},{"label":"Wikipedia「碓氷峠」","url":"https://ja.wikipedia.org/w/index.php?oldid=111013045"},{"label":"Wikipedia「千住宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=108675916"},{"label":"Wikipedia「おくのほそ道の風景地」","url":"https://ja.wikipedia.org/w/index.php?oldid=110428016"},{"label":"Wikipedia「草加宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=105484607"},{"label":"Wikipedia「草加松原」","url":"https://ja.wikipedia.org/w/index.php?oldid=109347917"},{"label":"Wikipedia「栗橋宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=110025737"},{"label":"Wikipedia「神橋」","url":"https://ja.wikipedia.org/w/index.php?oldid=109608024"},{"label":"Wikipedia「鉢石宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=108691034"},{"label":"Wikipedia「府中宿 (甲州街道)」","url":"https://ja.wikipedia.org/w/index.php?oldid=108658661"},{"label":"Wikipedia「小仏関所」","url":"https://ja.wikipedia.org/w/index.php?oldid=110478253"},{"label":"Wikipedia「小原宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=109512472"},{"label":"Wikipedia「芦野宿」","url":"https://ja.wikipedia.org/w/index.php?oldid=110019523"}],"credit":{"map":"地形・写真：出典 国土地理院（地理院タイル：全国最新写真（シームレス）・標高タイル）。写真の低いズームは Landsat8 画像（GSI, TSIC, GEO Grid/AIST）・海底地形（GEBCO）による。","osm":"街道の線・宿のまわりの道・建物・木：© OpenStreetMap contributors（ODbL）。林の中の木の一本ずつの位置は模式。 葉と樹皮はmitsulabの既存素材（Poly Haven・ambientCGのCC0写真由来）。葉の配置・建物高さの一部は模式。","voice":"VOICEVOX:冥鳴ひまり","aoi":"碧は mitsulab の依代（よりしろ）。言葉と動きは AI とプログラムで動かしています。話すのは、確かめた記録と計算した値だけです。会話や位置は保存しません。","facts":"宿の事実は Wikipedia の各記事（版を固定したリンク）。道のり・標高・高低差は、国土地理院の標高と OpenStreetMap の線から計算した値（目安）。"},"hikawa":"https://mitsulab-soil.github.io/aoi-walk-hikawa/"};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const [K, RT] = await Promise.all([fetch("data/kaido.json").then(r => r.json()), fetch("data/routes.json").then(r => r.json())]);
-window.MLLoader?.progress(.6);
-const ST = K.stations, HW = Object.fromEntries(K.highways.map(h => [h.id, h]));
-const store = (() => { try { const k = "ftw-kaido-1"; const v = JSON.parse(localStorage.getItem(k) || "{}"); return { v, save() { try { localStorage.setItem(k, JSON.stringify(this.v)); } catch (e) {} } }; } catch (e) { return { v: {}, save() {} }; } })();
-store.v.visits ||= {};
+const MOB = matchMedia("(max-width: 820px), (pointer: coarse)").matches;
+const store = { get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = (dt, r) => 1 - Math.exp(-dt * r);
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const SK = APP.store;
+let TS = 1; { const q = +new URLSearchParams(location.search).get("ts"); if (q > 1 && q <= 50) TS = q; }   // 確かめ用の倍速
 
-// ---- 状態
-let hw = HW[store.v.hw] ? store.v.hw : "nakasendo", idx = 0, step = 0, intro = !store.v.seenIntro;
-const seq = () => HW[hw].seq;
-const lastNo = h => Math.max(...HW[h].seq.map(i => ST[i].no).flat().filter(n => typeof n === "number"));
-const noTxt = s => Array.isArray(s.no) ? `${s.no[0]}–${s.no[1]}` : s.no;
-const km = (h, id) => HW[h].km[id];
+// ---------------------------------------------------------------- 座標（原点からのメートル。x＝東・z＝南）
+const O = APP.origin, KX = 111320 * Math.cos(O[1] * Math.PI / 180), KZ = 110574;
+const llX = lon => (lon - O[0]) * KX, llZ = lat => -(lat - O[1]) * KZ;
+const xLon = x => O[0] + x / KX, zLat = z => O[1] - z / KZ;
+const tx2lon = (x, z) => x / 2 ** z * 360 - 180;
+const ty2lat = (y, z) => { const n = Math.PI - 2 * Math.PI * y / 2 ** z; return 180 / Math.PI * Math.atan(Math.sinh(n)); };
+const lon2tx = (lon, z) => (lon + 180) / 360 * 2 ** z;
+const lat2ty = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
 
-// ---- 地図（国土地理院の淡色地図）
-const map = L.map("map", { zoomControl: false, attributionControl: true, preferCanvas: true }).setView([35.9, 139.6], 9);
-L.control.zoom({ position: "bottomright" }).addTo(map);
-L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", { maxZoom: 18, minZoom: 5, attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">出典：国土地理院</a>' }).addTo(map);
-map.attributionControl.setPrefix(false).addAttribution('道の線：<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>（ODbL）・点線＝直線');
-const lineG = L.layerGroup().addTo(map), dotG = L.layerGroup().addTo(map);
-let meMk = null, curMk = null;
+// ---------------------------------------------------------------- 3D の土台
+let renderer = null, NO3D = false;
+const canvas = $("c");
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" }); }
+catch (e) { NO3D = true; }
+const DPR = Math.min(devicePixelRatio || 1, MOB ? 1.5 : 1.5);
+const scene = new THREE.Scene();
+const SKY = new THREE.Color(0xd3e0e6);
+scene.background = SKY; scene.fog = new THREE.Fog(SKY, 1e5, 1e7);
+/* 空：上が青く、地平が淡い（カメラについてまわる大きな球） */
+const skyDome = (() => { const g = new THREE.SphereGeometry(1, 32, 16), c = [], p = g.attributes.position, top = new THREE.Color(0x8fb4cf), hor = SKY.clone();
+  for (let i = 0; i < p.count; i++) { const y = p.getY(i), t = sstep(-.02, .45, y); const cc = hor.clone().lerp(top, t); c.push(cc.r, cc.g, cc.b); }
+  g.setAttribute("color", new THREE.Float32BufferAttribute(c, 3));
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false, depthTest: false })); m.renderOrder = -10; m.frustumCulled = false; return m; })();
+scene.add(skyDome);
+const camera = new THREE.PerspectiveCamera(MOB ? 58 : 50, innerWidth / innerHeight, 1, 1e6);
+const hemi = new THREE.HemisphereLight(0xf2f5f7, 0x6d7466, 2.3); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff4e6, 1.25); sun.position.set(-0.5, 1, 0.35); scene.add(sun);
+sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-32;sun.shadow.camera.right=32;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;sun.shadow.camera.near=1;sun.shadow.camera.far=180;sun.shadow.normalBias=.08;sun.shadow.bias=-.0001;scene.add(sun.target);
+const world = new THREE.Group(); scene.add(world);           // 地形と俯瞰の線（高さを強調するときは y を伸ばす）
+let EX = 1;                                                     // 高さの強調（俯瞰ほど強く・地面の近くでは 1）
+if (renderer) { renderer.setPixelRatio(DPR); renderer.setSize(innerWidth, innerHeight, false); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .95;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap; }
+let dirty = 3;
+function resize() { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer?.setSize(innerWidth, innerHeight, false); for (const m of lineMats) m.resolution.set(innerWidth, innerHeight); dirty = 3; }
+addEventListener("resize", resize);
 
-function draw() {
-  lineG.clearLayers(); dotG.clearLayers();
-  for (const h of K.highways) {
-    const on = h.id === hw;
-    for (const lg of RT.routes[h.id]) {
-      if (!on && h.shared_from && HW[h.shared_from].seq.includes(lg.to)) continue;
-      L.polyline(lg.coords, { color: h.color, weight: on ? 5 : 2.5, opacity: on ? .9 : .35, dashArray: lg.kind === "straight" ? "6 7" : null, interactive: false }).addTo(lineG);
-    }
+// ---------------------------------------------------------------- タイル（取ってくる・ためる）
+const GSI = "https://cyberjapandata.gsi.go.jp/xyz/";
+const Q = []; let inflight = 0; const MAXF = MOB ? 6 : 8;
+const CANCEL = "cancel";
+function getBitmap(url, pri, node = null) {
+  return new Promise(res => { Q.push({ url, pri, res, node }); pump(); });
+}
+function pump() {
+  while (inflight < MAXF && Q.length) {
+    let bi = 0; for (let i = 1; i < Q.length; i++) if (Q[i].pri < Q[bi].pri) bi = i;
+    const it = Q.splice(bi, 1)[0];
+    if (it.node && !it.node.pinned && it.node.used < frameNo - 25) { it.res(CANCEL); continue; }   /* もう見ていないタイルは取りに行かない */
+    inflight++;
+    fetch(it.url, { mode: "cors", signal: AbortSignal.timeout(14000) }).then(r => r.ok ? r.blob() : null).then(b => b ? createImageBitmap(b) : null)
+      .then(bm => it.res(bm), () => it.res(null)).finally(() => { inflight--; pump(); });
   }
-  const s = seq();
-  s.forEach((id, i) => {
-    const st = ST[id], card = !!K.cards[id], seen = store.v.visits[id]?.length;
-    const mk = st.kind === "toge"
-      ? L.marker(st.ll, { icon: L.divIcon({ className: "toge", html: "▲", iconSize: [14, 14] }) })
-      : L.circleMarker(st.ll, { radius: card ? 7 : 5, color: HW[hw].color, weight: card ? 3 : 2, fillColor: seen ? HW[hw].color : "#fff", fillOpacity: 1 });
-    mk.bindTooltip(st.name, { className: "lbl", direction: "top", offset: [0, -6] });
-    mk.on("click", () => select(i, true));
-    mk.addTo(dotG);
+}
+const DEM = new Map();     // "z/x/y" → Float32Array(256*256) | 0（海など・タイルが無い）
+const DEMP = new Map();
+let rc = null;
+function decodeDem(bm) {
+  if (!rc) { rc = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(256, 256) : Object.assign(document.createElement("canvas"), { width: 256, height: 256 }); }
+  const g = rc.getContext("2d", { willReadFrequently: true }); g.clearRect(0, 0, 256, 256); g.drawImage(bm, 0, 0);
+  const d = g.getImageData(0, 0, 256, 256).data, h = new Float32Array(65536);
+  for (let i = 0; i < 65536; i++) { const v = (d[i * 4] << 16) + (d[i * 4 + 1] << 8) + d[i * 4 + 2]; h[i] = v === 8388608 ? 0 : (v > 8388608 ? v - 16777216 : v) * .01; }
+  bm.close?.(); return h;
+}
+function demTile(z, x, y, pri = 5) {
+  const k = `${z}/${x}/${y}`; if (DEM.has(k)) return Promise.resolve(DEM.get(k));
+  if (DEMP.has(k)) return DEMP.get(k);
+  const p = getBitmap(`${GSI}dem_png/${z}/${x}/${y}.png`, pri).then(bm => { const h = bm ? decodeDem(bm) : 0; DEM.set(k, h); DEMP.delete(k); return h; });
+  DEMP.set(k, p); return p;
+}
+function demSample(h, u, v) {   /* u, v：タイルの中の 0〜256（画素の中心は +0.5） */
+  if (!h) return 0;
+  const x = clamp(u - .5, 0, 255), y = clamp(v - .5, 0, 255), i = Math.floor(x), j = Math.floor(y), i1 = Math.min(255, i + 1), j1 = Math.min(255, j + 1), a = x - i, b = y - j;
+  return (h[j * 256 + i] * (1 - a) + h[j * 256 + i1] * a) * (1 - b) + (h[j1 * 256 + i] * (1 - a) + h[j1 * 256 + i1] * a) * b;
+}
+function heightLL(lon, lat, zmax = 14) {   /* ためてある中でいちばん細かい標高。無ければ null */
+  for (let z = zmax; z >= 5; z--) {
+    const fx = lon2tx(lon, z), fy = lat2ty(lat, z), x = Math.floor(fx), y = Math.floor(fy), h = DEM.get(`${z}/${x}/${y}`);
+    if (h !== undefined) return demSample(h, (fx - x) * 256, (fy - y) * 256);
+  }
+  return null;
+}
+const heightXZ = (x, z) => heightLL(xLon(x), zLat(z));
+function ensureDem(lon0, lat0, lon1, lat1, z = 14) {
+  const ps = []; for (let x = Math.floor(lon2tx(lon0, z)); x <= Math.floor(lon2tx(lon1, z)); x++) for (let y = Math.floor(lat2ty(lat1, z)); y <= Math.floor(lat2ty(lat0, z)); y++) ps.push(demTile(z, x, y, 0));
+  return Promise.all(ps);
+}
+
+// ---------------------------------------------------------------- 地形（四分木）
+const terrain = new THREE.Group(); world.add(terrain);
+const MAXZ = 17, MAXT = MOB ? 110 : 180;
+let SPLIT = 1;   /* タイル（256 画素）が画面でおよそこの大きさを超えたら分ける */
+const splitNow = () => (MOB ? 410 : 360) / (innerHeight / 2 / Math.tan(camera.fov * Math.PI / 360));
+const nodes = new Map(); let frameNo = 0, live = 0;
+const seaMat = new THREE.MeshLambertMaterial({ color: 0x77786b });
+function mkNode(z, x, y) {
+  const k = `${z}/${x}/${y}`; let n = nodes.get(k); if (n) return n;
+  const w = tx2lon(x, z), e = tx2lon(x + 1, z), nn = ty2lat(y, z), s = ty2lat(y + 1, z);
+  const cx = (llX(w) + llX(e)) / 2, cz = (llZ(nn) + llZ(s)) / 2, size = Math.max(llX(e) - llX(w), llZ(s) - llZ(nn));
+  n = { k, z, x, y, w, e, n: nn, s, cx, cz, size, hm: 0, mesh: null, st: 0, kids: null, used: 0 };
+  nodes.set(k, n); return n;
+}
+function inheritedPhoto(n) {
+  // 欠けた細密タイルには、同じ場所を覆う上位写真を切り出す。架空の地表は生成しない。
+  for(let z=n.z-1;z>=APP.rootZ;z--){const k=n.z-z,scale=2**k,a=nodes.get(`${z}/${n.x>>k}/${n.y>>k}`),im=a?.mesh?.material?.map?.image;
+    if(!im)continue;const c=document.createElement("canvas");c.width=c.height=256;
+    c.getContext("2d").drawImage(im,(n.x%scale)*im.width/scale,(n.y%scale)*im.height/scale,im.width/scale,im.height/scale,0,0,256,256);return c;
+  }return null;
+}
+function loadNode(n, pri) {
+  if (n.st === 2) return Promise.resolve(n); if (n.st === 1) return n.pending; n.st = 1;
+  const dz = Math.min(n.z, 14), sh = n.z - dz;
+  return n.pending = Promise.all([demTile(dz, n.x >> sh, n.y >> sh, pri), getBitmap(`${GSI}seamlessphoto/${n.z}/${n.x}/${n.y}.jpg`, pri + .5, n)]).then(([h, bm]) => {
+    if (bm === CANCEL) { n.st = 0; return; }
+    if (n.st !== 1) { bm?.close?.(); return; }
+    const N = n.z <= 9 ? 16 : 24, ox = (n.x / 2 ** sh - (n.x >> sh)) * 256, oy = (n.y / 2 ** sh - (n.y >> sh)) * 256, span = 256 / 2 ** sh;
+    const V = (N + 1) * (N + 1), E = 4 * N, pos = new Float32Array((V + E + 4) * 3), uv = new Float32Array((V + E + 4) * 2), idx = [];
+    let hmin = 1e9, hmax = -1e9;
+    const hs = new Float32Array(V);
+    for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) {
+      const lon = tx2lon(n.x + i / N, n.z), lat = ty2lat(n.y + j / N, n.z), hh = demSample(h, ox + span * i / N, oy + span * j / N), q = j * (N + 1) + i;
+      pos[q * 3] = llX(lon) - n.cx; pos[q * 3 + 1] = hh; pos[q * 3 + 2] = llZ(lat) - n.cz; uv[q * 2] = i / N; uv[q * 2 + 1] = j / N; hs[q] = hh;
+      if (hh < hmin) hmin = hh; if (hh > hmax) hmax = hh;
+    }
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const a = j * (N + 1) + i, b = a + 1, c = a + N + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+    /* すき間を隠す縁（下へ垂らす） */
+    const sk = n.size * .02 + 3, ring = [];
+    for (let i = 0; i < N; i++) ring.push(i); for (let j = 0; j < N; j++) ring.push(j * (N + 1) + N); for (let i = N; i > 0; i--) ring.push(N * (N + 1) + i); for (let j = N; j > 0; j--) ring.push(j * (N + 1));
+    ring.forEach((q, r) => { const t = V + r; pos[t * 3] = pos[q * 3]; pos[t * 3 + 1] = pos[q * 3 + 1] - sk; pos[t * 3 + 2] = pos[q * 3 + 2]; uv[t * 2] = uv[q * 2]; uv[t * 2 + 1] = uv[q * 2 + 1]; });
+    for (let r = 0; r < ring.length; r++) { const a = ring[r], b = ring[(r + 1) % ring.length], a2 = V + r, b2 = V + (r + 1) % ring.length; idx.push(a, b, a2, b, b2, a2); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.setIndex(idx);
+    g.computeVertexNormals(); g.computeBoundingSphere();
+    let mat = seaMat;
+    n.photoSource=bm?"native":"inherited";bm ||= inheritedPhoto(n);if(!bm)n.photoSource="unavailable";
+    if (bm) { const t = new THREE.Texture(bm); t.flipY = false; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = MOB ? 2 : 4; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.needsUpdate = true; mat = new THREE.MeshLambertMaterial({ map: t }); mat.color.setScalar(n.z <= 12 ? 1.3 : 1.12); }
+    const m = new THREE.Mesh(g, mat); m.position.set(n.cx, 0, n.cz); m.visible = false; m.matrixAutoUpdate = true;
+    m.receiveShadow=true;n.mesh = m; n.hm = (hmin + hmax) / 2; n.hr = (hmax - hmin) / 2; n.st = 2; terrain.add(m); live++; dirty = 2; return n;
   });
-  const st = ST[s[idx]];
-  curMk = L.circleMarker(st.ll, { radius: 13, color: HW[hw].color, weight: 2, fill: false, interactive: false }).addTo(dotG);
-  curMk.bindTooltip(st.name, { permanent: true, className: "lbl", direction: "right", offset: [12, 0] });
 }
-
-// ---- 表示
-function fmt(n, d = 1) { return n == null ? "—" : Number(n).toFixed(d); }
-function srcLinks(keys) {
-  return keys.map(k => { const s = K.sources[k]; return s ? `<a class="s" href="${s.permalink}" target="_blank" rel="noopener">${s.label}</a>` : `<span class="s">${k}</span>`; }).join(" ");
+function freeNode(n) {
+  if (n.mesh) { terrain.remove(n.mesh); n.mesh.geometry.dispose(); if (n.mesh.material !== seaMat) { n.mesh.material.map?.dispose(); n.mesh.material.dispose(); } n.mesh = null; live--; }
+  n.st = 0;
 }
-function lineOf(id) { return K.lines[id]; }
-/* 2026-10-08（氷川道中の作法にそろえる）：碧の話は短く（かっこの中を外し、二文まで）。声があれば、字幕は声が鳴りはじめてから、息つぎの時刻に合わせて文ごとに替える。声は押したときだけ */
-function speechOf(t) {
-  const u = String(t).replace(/（[^）]*）/g, "").replace(/\s+/g, " ").trim();
-  const ss = u.split(/(?<=[。？！])/).map(x => x.trim()).filter(Boolean); let out = "", n = 0;
-  for (const x of ss) { if (n >= 2 || (n && out.length + x.length > 72)) break; out += x; n++; }
-  return out || u;
+let ROOTS = [];
+function initRoots() {
+  const [w, s, e, nn] = [APP.bbox[0] - 1.2, APP.bbox[1] - .9, APP.bbox[2] + 1.2, APP.bbox[3] + .9], z = APP.rootZ;
+  for (let x = Math.floor(lon2tx(w, z)); x <= Math.floor(lon2tx(e, z)); x++) for (let y = Math.floor(lat2ty(nn, z)); y <= Math.floor(lat2ty(s, z)); y++) ROOTS.push(mkNode(z, x, y));
+  ROOTS.forEach(n => loadNode(n, -10));
 }
-const VOICE = K.voice || {}, AU = new Audio(); AU.preload = "auto"; let subI = null, gest = false, sndOn = (() => { try { return localStorage.getItem("ftw-kaido-snd") !== "0"; } catch { return true; } })();
-addEventListener("pointerdown", () => { gest = true; }, { capture: true }); addEventListener("keydown", () => { gest = true; }, { capture: true });
-const SUBLOG = [];
-function subPlan(t, v) {
-  const cs = t.split(/(?<=[。？！])/).filter(Boolean), n = t.length, dur = v.dur, pz = v.pz || [];
-  const pu = []; for (let i = 0; i < n - 1; i++) if ("、。？！".includes(t[i])) pu.push(i);
-  const ok = pz.length === pu.length, A = [[0, .1]]; if (ok) pu.forEach((i, k) => { A.push([i + .999, pz[k][0]]); A.push([i + 1, pz[k][1]]); }); A.push([n, Math.max(.2, dur - .18)]);
-  const at = c => { for (let k = 1; k < A.length; k++) if (c <= A[k][0]) { const [a, ta] = A[k - 1], [b, tb] = A[k]; return ta + (tb - ta) * (b > a ? (c - a) / (b - a) : 1); } return dur; };
-  let c0 = 0; return cs.map(ch => { const st = at(c0); c0 += ch.length; return { ch, t: st }; });
+// 歩行範囲の地表は、俯瞰の粗い親タイルより先に揃える。
+// 近傍を固定する間も遠景は従来のLOD。写真が無い場合は同じ場所の上位写真を使う。
+let groundFocus = null;
+function groundSplit(n) {
+  if (!groundFocus || n.z >= 17) return false;
+  const f=groundFocus, dx=Math.max(0,f.minX-(n.cx+n.size*.5),(n.cx-n.size*.5)-f.maxX), dz=Math.max(0,f.minZ-(n.cz+n.size*.5),(n.cz-n.size*.5)-f.maxZ);
+  return Math.hypot(dx,dz)<(n.z<16?700:220);
 }
-function sayV(t, key) {
-  clearInterval(subI); try { AU.pause(); } catch {}
-  const v = VOICE[key];
-  if (!v || v.t !== t || !sndOn || !gest) { $("#say").textContent = t; return; }
-  const P = subPlan(t, v); let i = -1;
-  const show = k => { if (k === i) return; i = k; $("#say").textContent = P[k].ch; if (SUBLOG.length < 300) SUBLOG.push({ key, k, ct: +AU.currentTime.toFixed(3), plan: +P[k].t.toFixed(3) }); };
-  $("#say").textContent = ""; AU.src = v.f; try { AU.currentTime = 0; } catch {}
-  const tick = () => { const ct = AU.currentTime; let k = 0; while (k + 1 < P.length && P[k + 1].t <= ct + .03) k++; show(k); };
-  subI = setInterval(() => { if (!AU.paused && AU.currentTime > 0) tick(); if (AU.ended) { clearInterval(subI); $("#say").textContent = t; } }, 40);
-  AU.onerror = () => { clearInterval(subI); $("#say").textContent = t; };
-  AU.play().catch(() => { clearInterval(subI); $("#say").textContent = t; });
-}
-function setSnd(on) { sndOn = on; try { localStorage.setItem("ftw-kaido-snd", on ? "1" : "0"); } catch {} const b = $("#voice"); b.hidden = !Object.keys(VOICE).length; b.textContent = on ? "声 あり" : "声 なし"; b.setAttribute("aria-pressed", String(on)); if (!on) { clearInterval(subI); try { AU.pause(); } catch {} } }
-/* 声の書き出し用（画面の操作には使わない） */
-window.__kdSays = () => { const out = []; for (const [id, ln] of Object.entries(K.lines)) [ln.miru, ln.hanashi, ln.minaosu].forEach((t, i) => { if (t) out.push({ key: `${id}_${i}`, t: speechOf(t) }); }); return out; };
-window.__kd = { SUBLOG, VOICE };
-function renderSay() {
-  const s = seq(), id = s[idx], ln = lineOf(id);
-  const steps = [...$("#steps").children];
-  if (intro) {
-    steps.forEach(e => e.classList.remove("on"));
-    $("#say").textContent = "碧（あおい）です。わたしは AI です。確かめた事実だけを話し、土地を診断したり、昔の人の気持ちを代わりに言ったりはしません。宿ごとに「見る → 碧の話 → 見直す」の順で話します。";
-    $("#sayNote").textContent = "歩きながら画面を見ないでください。";
-    $("#stepBtn").textContent = "はじめる"; talk(3); return;
+async function primeGround(p) {
+  for(const n of nodes.values()) n.pinned=false;
+  const x=llX(p.ll[0]),z=llZ(p.ll[1]),xs=p.walk.map(q=>x+q[0]),zs=p.walk.map(q=>z+q[1]);
+  const focus=groundFocus={minX:Math.min(...xs),maxX:Math.max(...xs),minZ:Math.min(...zs),maxZ:Math.max(...zs),id:p.id};
+  async function refine(n) {
+    if(groundFocus!==focus)return;
+    n.pinned=true;n.used=frameNo;
+    await loadNode(n,-100+n.z);
+    if(!groundSplit(n)||groundFocus!==focus)return;
+    if(!n.kids)n.kids=[0,1,2,3].map(i=>mkNode(n.z+1,n.x*2+(i&1),n.y*2+(i>>1)));
+    for(const c of n.kids){c.pinned=true;c.used=frameNo;}
+    await Promise.all(n.kids.map(c=>loadNode(c,-100+c.z)));
+    await Promise.all(n.kids.filter(groundSplit).map(refine));
   }
-  steps.forEach((e, i) => e.classList.toggle("on", i === step));
-  sayV(speechOf([ln.miru, ln.hanashi, ln.minaosu][step]), `${id}_${step}`);
-  $("#sayNote").textContent = ln.auto ? "この宿は、名簿と計算値で話しています" : "";
-  $("#stepBtn").textContent = step < 2 ? "つぎへ" : "次の宿へ";
-  talk(Math.min(5, $("#say").textContent.length / 14));
+  await Promise.all(ROOTS.filter(groundSplit).map(refine));dirty=3;
 }
-function render() {
-  const h = HW[hw], s = seq(), id = s[idx], st = ST[id];
-  document.documentElement.style.setProperty("--hw", h.color);
-  [...$("#hws").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.h === hw));
-  const ln = lastNo(hw);
-  $("#pHw").textContent = `${h.name}　${h.range}`;
-  const lab = st.kind === "start" ? `<span class="n">0/${ln}</span>${st.name}（起点）` : st.kind === "toge" ? `<span class="n">峠</span>${st.name}` : st.kind === "end" ? `<span class="n">終点</span>${st.name}` : `<span class="n">${noTxt(st)}/${ln}</span>${st.name}`;
-  $("#pNm").innerHTML = lab;
-  $("#pBar").style.width = (100 * idx / (s.length - 1)) + "%";
-  $("#prev").disabled = idx === 0; $("#next").disabled = idx === s.length - 1;
-  renderSay(); renderCard(); draw();
-  location.replace("#" + hw + "/" + id);
-  store.v.hw = hw; store.v["i_" + hw] = idx; store.save();
-}
-function renderCard() {
-  const s = seq(), id = s[idx], st = ST[id], cd = K.cards[id], h = HW[hw];
-  const prev = idx > 0 ? ST[s[idx - 1]] : null, nxt = idx < s.length - 1 ? ST[s[idx + 1]] : null;
-  const legN = nxt ? RT.routes[hw].find(l => l.from === id) : null;
-  const dE = prev && st.elev != null && prev.elev != null ? st.elev - prev.elev : null;
-  const v = store.v.visits[id] || [];
-  let html = `<div class="facts">
-    <div><span>日本橋から（この街道で）</span>約 ${fmt(km(hw, id))} km</div>
-    <div><span>標高（計算値）</span>${st.elev == null ? "—" : "約 " + fmt(st.elev, 0) + " m"}</div>
-    <div><span>前の宿との高低差</span>${dE == null ? "—" : (Math.abs(dE) < .5 ? "±0 m" : (dE > 0 ? "+" : "−") + fmt(Math.abs(dE), 0) + " m")}</div>
-    <div><span>次の${nxt ? nxt.name : "宿"}まで</span>${legN ? "約 " + fmt(legN.km) + " km" + (legN.kind === "straight" ? "（直線）" : "") : "—"}</div>
-    ${st.ri ? `<div><span>前の宿からの里程</span>${st.ri}</div>` : ""}
-    <div><span>いまの場所</span>${st.pref}${st.muni}</div>
-    <div><span>ここに来た</span>${v.length ? v.length + " 回（最後 " + v[v.length - 1] + "）" : "まだ"}</div>
-  </div>`;
-  if (cd) {
-    for (const [k, t] of [["nature", "自然 ── 地形・水・木"], ["history", "歴史 ── 道と人の営み"], ["culture", "文化 ── 言葉と祈り"]]) {
-      if (!cd[k]?.length) continue;
-      html += `<div class="layer"><h3>${t}</h3><ul>${cd[k].map(it => `<li><span class="c" title="${{ "◎": "出典に書いてある", "○": "出典が「〜とされる・伝えられる」と書く", "△": "要確認" }[it.c]}">${it.c}</span>${it.t}${srcLinks(it.s)}</li>`).join("")}</ul></div>`;
+const _fr = new THREE.Frustum(), _pm = new THREE.Matrix4(), _sp = new THREE.Sphere(), _v = new THREE.Vector3();
+let loadingN = 0;
+function lod() {
+  frameNo++; SPLIT = splitNow(); _pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); _fr.setFromProjectionMatrix(_pm);
+  const cp = camera.position; loadingN = 0;
+  const visit = n => {
+    n.used = frameNo;
+    const hy = n.hm * EX, dist = Math.max(1, Math.hypot(n.cx - cp.x, hy - cp.y, n.cz - cp.z) - n.size * .72);
+    _sp.center.set(n.cx, hy, n.cz); _sp.radius = n.size * .75 + (n.hr ?? 0) * EX;
+    const inV = _fr.intersectsSphere(_sp);
+    const want = (inV && n.z < MAXZ && n.size / dist > SPLIT) || groundSplit(n);
+    if (want) {
+      if (!n.kids) n.kids = [0, 1, 2, 3].map(i => mkNode(n.z + 1, n.x * 2 + (i & 1), n.y * 2 + (i >> 1)));
+      let ok = true; for (const c of n.kids) { c.used = frameNo; if (c.st !== 2) { ok = false; loadNode(c, Math.log2(dist + 1) - (inV ? 3 : 0)); loadingN++; } }
+      if (ok) { if (n.mesh) n.mesh.visible = false; n.kids.forEach(visit); return; }
     }
-    if (cd.links) html += `<p>${cd.links.map(l => `<a href="${l.url}">${l.label}</a>`).join("・")}</p>`;
-  } else {
-    html += `<div class="prep">この宿は、名前・順番・場所・標高と、道のりの計算値で見ています。</div>`;
+    if (n.st === 2) n.mesh.visible = true; else { loadNode(n, Math.log2(dist + 1) - 5); loadingN++; }
+    if (n.kids) hideDown(n.kids);
+  };
+  const hideDown = ks => { for (const c of ks) { if (c.mesh) c.mesh.visible = false; if (c.kids) hideDown(c.kids); } };
+  ROOTS.forEach(visit);
+  // 古いものを捨てる（いま見えていないもの・使っていない順）
+  if (live > MAXT) {
+    const old = [...nodes.values()].filter(n => n.st === 2 && !n.pinned && n.used < frameNo && !ROOTS.includes(n)).sort((a, b) => a.used - b.used);
+    for (const n of old.slice(0, live - MAXT)) freeNode(n);
   }
-  html += `<p class="legend">場所：${st.loc_how}${st.loc_prec === "◐" ? "（宿の中心とは限らない）" : ""}。${st.loc_note}<br>標高：国土地理院の標高 API（${st.elev_src || "—"}）から計算した値（◐）。道のり：OpenStreetMap の街道の線に沿って測った値、線の無い区間は直線（点線）。${h.ri_src ? "<br>" + h.ri_src : ""}<br>${h.total_note} ${h.outside}</p>
-  <p class="legend">印：◎ 出典に書いてある／○ 出典が「〜とされる・伝えられる」と書く／△ 要確認／◐ 計算した値・代表点</p>`;
-  $("#card").innerHTML = html;
 }
 
-// ---- 選ぶ・進む
-function select(i, fly) {
-  idx = Math.max(0, Math.min(seq().length - 1, i)); step = 0; if (intro) { intro = false; store.v.seenIntro = 1; }
-  render();
-  const st = ST[seq()[idx]];
-  if (fly) map.flyTo(st.ll, Math.max(map.getZoom(), 13), { duration: RM ? 0 : .8 });
+// ---------------------------------------------------------------- 俯瞰の線と点（高さは build3d.py が地理院の標高で入れた値）
+const overlay = new THREE.Group(); world.add(overlay);
+const lineMats = [];
+for (const ln of APP.lines) {
+  const ps = []; for (const [lon, lat, h] of ln.p) ps.push(llX(lon), h + 25, llZ(lat));
+  const g = new LineGeometry(); g.setPositions(ps);
+  const m = new LineMaterial({ color: new THREE.Color(ln.c), linewidth: ln.dash ? 2.2 : 3.2, transparent: true, opacity: .92, depthTest: false, dashed: !!ln.dash, dashSize: 900, gapSize: 700, worldUnits: false });
+  m.resolution.set(innerWidth, innerHeight); lineMats.push(m);
+  const L = new Line2(g, m); L.computeLineDistances(); L.renderOrder = 5; overlay.add(L);
 }
-function setHw(h) {
-  hw = h; idx = Math.min(store.v["i_" + h] || 0, seq().length - 1); step = 0; render();
-  map.fitBounds(L.latLngBounds(seq().map(i => ST[i].ll)), { padding: [30, 30], animate: !RM });
+{ const pos = [], col = [];
+  for (const [lon, lat, h, c] of APP.dots) { pos.push(llX(lon), h + 30, llZ(lat)); const cc = new THREE.Color(c); col.push(cc.r, cc.g, cc.b); }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  const cv = document.createElement("canvas"); cv.width = cv.height = 32; const cg = cv.getContext("2d"); cg.fillStyle = "#fff"; cg.beginPath(); cg.arc(16, 16, 13, 0, 7); cg.fill(); cg.lineWidth = 4; cg.strokeStyle = "rgba(255,255,255,1)"; cg.stroke();
+  const P = new THREE.Points(g, new THREE.PointsMaterial({ size: MOB ? 8 : 7, sizeAttenuation: false, vertexColors: true, depthTest: false, transparent: true, opacity: .95, map: new THREE.CanvasTexture(cv), alphaTest: .4 }));
+  P.renderOrder = 6; overlay.add(P); }
+
+// ---------------------------------------------------------------- カメラ（俯瞰）
+const V = { x: 0, z: 0, dist: 2e5, pitch: .95, yaw: 0 };   /* 見る先（地面）・距離・見下ろす角・向き */
+{ const v = APP.view0; V.x = llX(v.lon); V.z = llZ(v.lat); V.dist = v.dist; V.pitch = v.pitch; V.yaw = v.yaw; if (MOB) V.dist *= 1.25; }
+let mode = "over";     // over（俯瞰）・fly（降りる・昇る）・walk（歩く）
+function groundAt(x, z) { const h = heightXZ(x, z); return (h ?? 0) * EX; }
+function exFor(alt) { return 1 + 1.6 * sstep(4000, 60000, alt); }
+function placeOver() {
+  const gy = groundAt(V.x, V.z), cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
+  camera.position.set(V.x + Math.sin(V.yaw) * cp * V.dist, gy + sp * V.dist, V.z + Math.cos(V.yaw) * cp * V.dist);
+  camera.lookAt(V.x, gy, V.z);
 }
-for (const h of K.highways) { const b = document.createElement("button"); b.textContent = h.short; b.dataset.h = h.id; b.setAttribute("aria-label", h.name); b.style.setProperty("--hw", h.color); b.onclick = () => setHw(h.id); $("#hws").append(b); }
-$("#prev").onclick = () => select(idx - 1, true);
-$("#next").onclick = () => select(idx + 1, true);
-$("#stepBtn").onclick = nextStep; $("#aoiBox").onclick = nextStep;
-function nextStep() {
-  if (intro) { intro = false; store.v.seenIntro = 1; store.save(); step = 0; renderSay(); return; }
-  if (step < 2) { step++; renderSay(); } else if (idx < seq().length - 1) select(idx + 1, true);
+function camAlt() { const h = heightXZ(camera.position.x, camera.position.z); return camera.position.y - (h ?? 0) * EX; }
+function updClip() {
+  const alt = Math.max(1, camAlt());
+  camera.near = clamp(alt * .02, .25, 800); camera.far = clamp(alt * 14 + 25000, 25000, 3e6); camera.updateProjectionMatrix();
+  const f0 = alt < 1500 ? lerp(380, 4000, sstep(2, 1500, alt)) : alt * 3, f1 = alt < 1500 ? lerp(9000, 40000, sstep(2, 1500, alt)) : Math.max(40000, alt * 16);
+  scene.fog.near = f0; scene.fog.far = f1;
+  overlay.visible = alt > 700; skyDome.position.copy(camera.position); skyDome.scale.setScalar(camera.far * .9);
+  if (local) local.visible = alt < 3500;
 }
-$("#voice").onclick = e => { e.stopPropagation(); setSnd(!sndOn); }; setSnd(sndOn);
-$("#openCard").onclick = () => { const o = $("#sheet").classList.toggle("open"); $("#openCard").setAttribute("aria-expanded", o); $("#openCard").textContent = o ? "札をとじる" : "札をひらく"; setTimeout(() => map.invalidateSize(), 50); };
-$("#here").onclick = () => { const id = seq()[idx]; (store.v.visits[id] ||= []).push(new Date().toISOString().slice(0, 10)); store.save(); renderCard(); draw(); };
-
-// ---- 現地で歩く（GPS）。位置は保存しない・送らない
-let watch = null, autoDone = null;
-$("#walkBtn").onclick = () => {
-  if (watch != null) { navigator.geolocation.clearWatch(watch); watch = null; meMk?.remove(); meMk = null; $("#walk").classList.remove("on"); $("#walkBtn").setAttribute("aria-pressed", "false"); return; }
-  if (!("geolocation" in navigator) || !isSecureContext) { showWalk("この端末・この開き方では位置を使えません（https か localhost で開いてください）。家では ◀ ▶ で宿を一つずつ進めます。"); return; }
-  openDlg(`<h2>現地で歩く前に</h2><p>歩きながら画面を見ないでください。立ち止まって、道の端で見てください。車と自転車に気をつけてください。</p><p>位置はこの端末の中で「いちばん近い宿」を出すためだけに使い、保存も送信もしません。</p><p><button id="goWalk">わかった。位置を使う</button> <button id="noWalk">やめる</button></p>`);
-  $("#goWalk").onclick = () => { closeDlg(); startWalk(); }; $("#noWalk").onclick = closeDlg;
-};
-function showWalk(t) { $("#walk").innerHTML = t + `<div class="safety">歩きながら画面を見ないでください。</div>`; $("#walk").classList.add("on"); }
-function startWalk() {
-  $("#walkBtn").setAttribute("aria-pressed", "true"); showWalk("位置をさがしています…");
-  watch = navigator.geolocation.watchPosition(p => {
-    const me = [p.coords.latitude, p.coords.longitude];
-    if (!meMk) meMk = L.marker(me, { icon: L.divIcon({ className: "", html: '<div class="me"></div>', iconSize: [16, 16] }), interactive: false }).addTo(map); else meMk.setLatLng(me);
-    const s = seq(); let bi = 0, bd = 1e9;
-    s.forEach((id, i) => { const d = map.distance(me, ST[id].ll); if (d < bd) { bd = d; bi = i; } });
-    const n = ST[s[bi]], nx = bi < s.length - 1 ? ST[s[bi + 1]] : null;
-    const far = bd > 5000;
-    showWalk(far ? `いちばん近い${HW[hw].name}の宿は ${n.name}（約 ${(bd / 1000).toFixed(1)} km）。街道から離れているようです。` :
-      `いちばん近い宿：${n.name}（約 ${bd < 1000 ? Math.round(bd) + " m" : (bd / 1000).toFixed(1) + " km"}）${nx ? `<br>その次（日本橋から遠ざかる向き）：${nx.name}（${n.name}から約 ${fmt(RT.routes[hw].find(l => l.from === s[bi])?.km)} km）` : ""}<br><span class="tiny">位置の誤差：約 ${Math.round(p.coords.accuracy)} m</span>`);
-    if (bd < 250 && autoDone !== s[bi]) { autoDone = s[bi]; if (bi !== idx) select(bi, false); navigator.vibrate?.(120); }
-  }, e => showWalk("位置を取れませんでした（" + e.message + "）。家では ◀ ▶ で進めます。"), { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+/* 俯瞰の操作：ドラッグで動かす・ホイールとピンチで寄る・2 本指でまわす（右ドラッグ・Ctrl でも） */
+const ptrs = new Map(); let drag = null, lastTap = 0;
+canvas.addEventListener("pointerdown", e => { canvas.setPointerCapture?.(e.pointerId); ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); drag = { x: e.clientX, y: e.clientY, moved: 0, rot: e.button === 2 || e.ctrlKey || e.shiftKey, t: performance.now() }; W.dragging = true; });
+canvas.addEventListener("pointermove", e => {
+  const p = ptrs.get(e.pointerId); if (!p) return;
+  const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; if (drag) drag.moved += Math.abs(dx) + Math.abs(dy);
+  if (mode === "walk") { if (ptrs.size === 1) { W.lookYaw += dx * .005; W.lookPitch = clamp(W.lookPitch - dy * .004, -.6, .6); W.dragEnd = performance.now(); } return; }
+  if (mode !== "over") return;
+  if (ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), ang = Math.atan2(b.y - a.y, b.x - a.x);
+    if (drag.pd) { V.dist = clamp(V.dist * drag.pd / Math.max(1, d), 900, 4.5e5); V.yaw -= wrapA(ang - drag.pa); V.pitch = clamp(V.pitch + dy * .002, .3, 1.5); }
+    drag.pd = d; drag.pa = ang;
+  } else if (drag?.rot) { V.yaw -= dx * .006; V.pitch = clamp(V.pitch + dy * .005, .3, 1.5); }
+  else { const k = V.dist * (MOB ? 1.9 : 1.3) / innerHeight, c = Math.cos(V.yaw), s = Math.sin(V.yaw);
+    V.x -= (dx * c + dy * s / Math.max(.35, Math.sin(V.pitch))) * k; V.z -= (-dx * s + dy * c / Math.max(.35, Math.sin(V.pitch))) * k;
+    const [w0, s0, e0, n0] = APP.bbox; V.x = clamp(V.x, llX(w0), llX(e0)); V.z = clamp(V.z, llZ(n0), llZ(s0)); }
+  dirty = 3;
+});
+const ptrEnd = e => { ptrs.delete(e.pointerId); if (!ptrs.size) { W.dragging = false; drag = null; } else if (drag) { drag.pd = null; } };
+canvas.addEventListener("pointerup", ptrEnd); canvas.addEventListener("pointercancel", ptrEnd);
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+canvas.addEventListener("wheel", e => { e.preventDefault(); if (mode !== "over") return; V.dist = clamp(V.dist * Math.exp(e.deltaY * .0012), 900, 4.5e5); dirty = 3; }, { passive: false });
+canvas.addEventListener("keydown", e => { if (mode !== "over") return; const k = V.dist * .08, c = Math.cos(V.yaw), s = Math.sin(V.yaw);
+  if (e.key === "ArrowUp") { V.x -= s * k; V.z -= c * k; } else if (e.key === "ArrowDown") { V.x += s * k; V.z += c * k; } else if (e.key === "ArrowLeft") { V.x -= c * k; V.z += s * k; } else if (e.key === "ArrowRight") { V.x += c * k; V.z -= s * k; }
+  else if (e.key === "+" || e.key === "=") V.dist *= .8; else if (e.key === "-") V.dist *= 1.25; else return; dirty = 3; });
+function frameBox(b, dur = 1.4) {   /* 範囲がおさまるように俯瞰を動かす */
+  const [w, s, e, n] = b, cx = (llX(w) + llX(e)) / 2, cz = (llZ(n) + llZ(s)) / 2, span = Math.max(llX(e) - llX(w), (llZ(s) - llZ(n)) * innerWidth / innerHeight);
+  const to = { x: cx, z: cz + span * .05, dist: clamp(span * (MOB ? 1.5 : 1.15) + 4000, 3000, 4.5e5) }, fr = { x: V.x, z: V.z, dist: V.dist }, t0 = performance.now();
+  const step = () => { const u = RM ? 1 : clamp((performance.now() - t0) / (dur * 1000), 0, 1), k = u * u * (3 - 2 * u);
+    V.x = lerp(fr.x, to.x, k); V.z = lerp(fr.z, to.z, k); V.dist = Math.exp(lerp(Math.log(fr.dist), Math.log(to.dist), k)); dirty = 3; if (u < 1 && mode === "over") requestAnimationFrame(step); };
+  step();
 }
 
-// ---- この作品について
-function openDlg(h) { $("#dlgIn").innerHTML = h; $("#dlg").classList.add("on"); }
-function closeDlg() { $("#dlg").classList.remove("on"); }
-$("#dlg").onclick = e => { if (e.target.id === "dlg") closeDlg(); };
-$("#about").onclick = () => {
-  const n = Object.keys(K.cards).length, all = Object.values(ST).length;
-  openDlg(`<h2>《街道幽玄》について（試作）</h2>
-  <p>関東の五街道（東海道・中山道・日光街道・甲州街道・奥州街道）を一つにまとめ、宿場ごとに、地形と水（自然）に、道と人の営み（歴史）と、言葉と祈り（文化）を重ねて歩くための作品です。森羅道中の一作。</p>
-  <p>碧（あおい）は AI です。用意した言葉だけを話し、会話を保存しません。土地を診断せず、確かめていないことは言いません。</p>
-  <p>くわしい札は ${n} か所。ほかの宿（全 ${all} 点のうち残り）は、名前・順番・場所・標高と、道のりの計算値で見ています。</p>
-  <ul>
-  <li>地図：<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院 地理院タイル（淡色地図）</a>。標高：国土地理院 標高 API。場所の確かめ：国土地理院 住所検索・逆ジオコーダ</li>
-  <li>道の線：© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>（ODbL）の街道の relation。線の無い区間（日光街道の古河より先・奥州街道）は宿を直線でつないだもの（点線）</li>
-  <li>宿場の名簿・座標・事実：Wikipedia の各記事（版の番号つきでリンク）。CC BY-SA の文章は写さず、事実だけを短く書き直した</li>
-  ${Object.keys(K.voice || {}).length ? `<li>碧の声：VOICEVOX:冥鳴ひまり（AI の合成音声）。宿場の名・人の名・地名は、公式や辞典で読みを確かめた文だけを声にしています。</li>` : ""}
-  <li>碧の 3D：mitsulab（VRM・碧〈現行のデザイン〉）。表示に three.js・<a href="https://github.com/pixiv/three-vrm" target="_blank" rel="noopener">three-vrm</a>・Leaflet</li>
-  <li>「ここに来た」の記録は、この端末の中（localStorage）だけ</li>
-  </ul>
-  <p>つくった人：mitsulab（<a href="https://mitsulab.jp" target="_blank" rel="noopener">mitsulab.jp</a>）／<a href="mailto:official@mitsulab.jp">official@mitsulab.jp</a></p>
-  <p style="font-size:12.5px" lang="ja">© 2026 mitsulab. All rights reserved. この作品の文章・画像・音声・3D・プログラムの著作権は、別に示した他者の素材を除き mitsulab にあります。無断の複製・転載・改変と、AI の学習・生成への利用はお断りします（テキスト・データマイニングの権利を留保します）。 <a href="https://mitsulab.jp/terms/#ai" target="_blank" rel="noopener">利用規約</a></p>
-  <p style="font-size:12.5px" lang="en">© 2026 mitsulab. All rights reserved. Copyright in the text, images, audio, 3D and software of this work belongs to mitsulab, except third-party materials credited separately. Copying, reposting or modifying them without permission, and using them for AI training or generation, are not permitted. Text and data mining rights are reserved. <a href="https://mitsulab.jp/terms/#ai-en" target="_blank" rel="noopener">Terms</a></p>
-  <p><button onclick="document.getElementById('dlg').classList.remove('on')">とじる</button></p>`);
-};
+// ---------------------------------------------------------------- 地点の印
+const PTS = APP.points;
+const marksEl = $("marks"), MK = [];
+for (const p of PTS) {
+  const el = document.createElement("button"); el.type = "button"; el.className = "mk"; el.hidden = true;
+  el.innerHTML = `<span class="lb"><b style="background:${esc(p.color)}"></b>${esc(p.short)}</span><span class="pin"></span><span class="dot" style="background:${esc(p.color)}"></span>`;
+  el.setAttribute("aria-label", `${p.label ?? p.group + " "}${p.name}（押すと、そこへ降りていきます）`);
+  el.onclick = e => { e.stopPropagation(); pick(p); };
+  marksEl.appendChild(el); MK.push({ p, el, x: llX(p.ll[0]), z: llZ(p.ll[1]), h: p.h ?? p.elev ?? 0, vis: false });
+}
+function avoidRects() { const r = []; for (const id of ["menuBtn", "brand", "upBtn", "sub", "start", "groups", "endbar"]) { const el = $(id); if (!el || el.hidden) continue; const b = el.getBoundingClientRect(); if (b.width) r.push([b.left - 4, b.top - 4, b.right + 4, b.bottom + 4]); } return r; }
+const hitR = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+function marksTick() {
+  const show = mode === "over" && !NO3D;
+  if (!show) { for (const m of MK) if (m.vis) { m.el.hidden = true; m.vis = false; } return; }
+  const av = avoidRects(), placed = [], cand = [];
+  for (const m of MK) {
+    _v.set(m.x, m.h * EX + 40, m.z).project(camera);
+    if (_v.z > 1 || Math.abs(_v.x) > 1.05 || Math.abs(_v.y) > 1.05) { if (m.vis) { m.el.hidden = true; m.vis = false; } continue; }
+    cand.push({ m, sx: (_v.x + 1) / 2 * innerWidth, sy: (1 - _v.y) / 2 * innerHeight });
+  }
+  cand.sort((a, b) => b.sy - a.sy);
+  for (const c of cand) {
+    const m = c.m, w = 30 + 13 * m.p.short.length, box = [c.sx - w / 2, c.sy - 50, c.sx + w / 2, c.sy - 26], dotb = [c.sx - 8, c.sy - 10, c.sx + 8, c.sy + 6];
+    if (av.some(a => hitR(dotb, a))) { if (m.vis) { m.el.hidden = true; m.vis = false; } continue; }
+    const lbOk = !av.some(a => hitR(box, a)) && !placed.some(a => hitR(box, a));
+    if (lbOk) placed.push(box);
+    m.el.classList.toggle("nolb", !lbOk);
+    if (!m.vis) { m.el.hidden = false; m.vis = true; }
+    m.el.style.transform = `translate(${(c.sx - 22).toFixed(1)}px, ${(c.sy - 54).toFixed(1)}px)`;
+    m.el.style.width = "44px"; m.el.style.alignItems = "center";
+  }
+}
 
-// ---- 碧（現行のデザイン・軽い版 web/aoi.vrm）。読めなくても作品は進む
-let talkUntil = 0, vrm = null;
-function talk(sec) { talkUntil = performance.now() + sec * 1000; }
-(async () => {
-  try {
-    const THREE = await import("three"), { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
-    const box = $("#aoiBox"), r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    r.setPixelRatio(Math.min(2, devicePixelRatio)); box.prepend(r.domElement);
-    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(24, 1, .1, 20);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xb9b2a0, 1.6)); const dl = new THREE.DirectionalLight(0xffffff, 1.4); dl.position.set(1, 2, 2); scene.add(dl);
-    const size = () => { const w = box.clientWidth, h = box.clientHeight; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); };
-    size(); addEventListener("resize", size);
-    const [buf, V, { MeshoptDecoder }] = await Promise.all([fetch("web/aoi.vrm").then(x => { if (!x.ok) throw new Error("HTTP " + x.status); return x.arrayBuffer(); }), import("@pixiv/three-vrm"), import("three/addons/libs/meshopt_decoder.module.js")]);
-    const ld = new GLTFLoader(); ld.setMeshoptDecoder(MeshoptDecoder); ld.register(p => new V.VRMLoaderPlugin(p));
-    const g = await ld.parseAsync(buf, ""), v = g.userData.vrm; V.VRMUtils.removeUnnecessaryVertices(g.scene); V.VRMUtils.rotateVRM0(v);
-    v.scene.traverse(o => o.frustumCulled = false); scene.add(v.scene); vrm = v;
-    const N = n => v.humanoid.getNormalizedBoneNode(n), set = (n, x, y, z) => { const b = N(n); if (b) b.rotation.set(x, y, z); };
-    /* （腕の休め＝aoi_pose.js の写し。前腕 Y は左が負・右が正＝肘が前へ曲がる） */ set("leftUpperArm", -.12, 0, -1.28); set("rightUpperArm", -.12, 0, 1.28); set("leftLowerArm", 0, -.28, 0); set("rightLowerArm", 0, .28, 0);
-    v.update(0); v.scene.updateMatrixWorld(true);
-    const b = new THREE.Box3().setFromObject(v.scene), hgt = b.max.y - b.min.y, sc = hgt > .5 ? 1.62 / hgt : 1;
-    v.scene.scale.setScalar(sc); v.scene.position.y = -b.min.y * sc;
-    cam.position.set(0, 1.28, 2.6); cam.lookAt(0, 1.12, 0);
-    if (v.lookAt) v.lookAt.target = cam;
-    const clk = new THREE.Clock();
-    r.setAnimationLoop(() => {
-      const dt = Math.min(.05, clk.getDelta()), t = clk.elapsedTime, br = RM ? 0 : Math.sin(t * 2 * Math.PI / 4.6);
-      set("chest", -.012 * br, 0, 0); set("head", 0, RM ? 0 : .06 * Math.sin(t * .7), 0);
-      let bv = 0; if (!RM) { const u = t % 4.3; bv = u < .09 ? u / .09 : u < .12 ? 1 : u < .26 ? 1 - (u - .12) / .14 : 0; }
-      const em = v.expressionManager; em?.setValue("blink", bv);
-      em?.setValue("aa", !RM && performance.now() < talkUntil ? .35 + .35 * Math.abs(Math.sin(t * 11)) : 0);
-      v.update(dt); r.render(scene, cam);
-    });
-  } catch (e) { $("#aoiBox").classList.add("fail"); console.warn("碧の姿を読めませんでした（言葉は下に出します）：", e?.message ?? e); }
-})();
+// ---------------------------------------------------------------- 声と字幕（《Qualium in Hikawa》の作り）
+const VOICE = APP.voice || {}, AU = $("aoiVoice");
+let soundOn = store.get(SK + "-sound", true), audioUnlocked = false, tok = 0, playP = null, lineT = null, subT = null;
+function hush() { tok++; clearTimeout(subT); clearTimeout(lineT); if (playP) return; try { AU.pause(); } catch {} }
+function playLine(text, onend) {
+  const my = ++tok, v = VOICE[text];
+  const fallback = () => { if (my !== tok) return; subFlow(text, v?.dur ?? null); clearTimeout(lineT); lineT = setTimeout(() => { if (my === tok) onend(); }, (v?.dur ? v.dur * 1000 : Math.max(2200, 900 + text.length * 150)) / TS); };
+  if (!v || !soundOn || !audioUnlocked) { fallback(); return; }
+  const go = () => {
+    if (my !== tok) return;
+    if (AU.dataset.f !== v.f) { AU.src = v.f; AU.dataset.f = v.f; }
+    try { AU.currentTime = 0; } catch {}
+    AU.playbackRate = Math.min(TS, 4);
+    AU.onended = () => { if (my === tok) onend(); };
+    AU.onerror = () => { if (my === tok) fallback(); };
+    subFlow(text, v.dur / Math.min(TS, 4) * TS);
+    let p; try { p = AU.play(); } catch { fallback(); return; }
+    if (!p?.then) return;
+    playP = p.then(() => {}, () => { if (my === tok) fallback(); }).finally(() => { playP = null; if (my !== tok) try { AU.pause(); } catch {} });
+  };
+  if (playP) playP.then(go); else go();
+}
+const subEl = $("subT"), subBox = $("sub");
+const SEGM = (() => { try { return new Intl.Segmenter("ja", { granularity: "word" }); } catch { return null; } })();
+function words(s) { if (SEGM) return [...SEGM.segment(s)].map(x => x.segment); return s.match(/[A-Za-z0-9][A-Za-z0-9 .,'&-]*|[^A-Za-z0-9]/g) || [s]; }
+function chunks(text) {
+  const max = innerWidth <= 420 ? 40 : innerWidth <= 820 ? 52 : 70, out = [];
+  for (const s of text.split(/(?<=[。？！])/).filter(Boolean)) {
+    if (s.length <= max) { out.push(s); continue; }
+    let cur = "", lc = -1;
+    for (const w of words(s)) { if (cur.length + w.length > max && cur) { if (lc > max * .4) { out.push(cur.slice(0, lc + 1)); cur = cur.slice(lc + 1); } else { out.push(cur); cur = ""; } lc = cur.lastIndexOf("、"); } cur += w; if (w.endsWith("、")) lc = cur.length - 1; }
+    if (cur) out.push(cur);
+  }
+  return out;
+}
+function setSub(t, status = false) { subEl.classList.toggle("idle", !t); subBox.classList.toggle("rest", !t); subEl.innerHTML = status ? `<span class="st">${esc(t)}</span>` : esc(t); }
+function subFlow(text, dur) {
+  clearTimeout(subT); const cs = chunks(text), tot = cs.reduce((a, c) => a + c.length, 0); let i = 0;
+  const T = (dur ?? Math.max(2.2, .9 + text.length * .15)) * 1000 / TS;
+  const next = () => { if (i >= cs.length) return; setSub(cs[i]); A.chunk = cs[i]; const ms = T * cs[i].length / tot; i++; if (i < cs.length) subT = setTimeout(next, ms); };
+  next();
+}
+function sndLabel() { const b = $("sndBtn"); b.setAttribute("aria-pressed", String(soundOn)); b.textContent = soundOn ? "音" : "消音"; }
+$("sndBtn").onclick = () => { soundOn = !soundOn; store.set(SK + "-sound", soundOn); sndLabel(); if (!soundOn) try { AU.pause(); } catch {} if (speaking) replayLine(); };
+function toggleBig() { const on = !document.body.classList.contains("big"); document.body.classList.toggle("big", on); store.set(SK + "-font", on); $("bigSub").setAttribute("aria-pressed", String(on)); $("bigBtn")?.setAttribute("aria-pressed", String(on)); }
+$("bigSub").onclick = toggleBig;
+if (store.get(SK + "-font", false)) { document.body.classList.add("big"); $("bigSub").setAttribute("aria-pressed", "true"); }
 
-// ---- はじめ
-const m = location.hash.match(/^#(\w+)\/(\w+)$/);
-if (m && HW[m[1]] && HW[m[1]].seq.includes(m[2])) { hw = m[1]; idx = HW[hw].seq.indexOf(m[2]); render(); map.setView(ST[m[2]].ll, 13); }
-else setHw(hw);
-requestAnimationFrame(() => requestAnimationFrame(() => window.MLLoader?.done()));   // 地図と札が描けたら、読み込み画面を消す
-window.__kaido = { select, setHw, state: () => ({ hw, idx, step, id: seq()[idx], aoi: !!vrm, aoiFail: $("#aoiBox").classList.contains("fail") }) };
+/* 話の列：一行ずつ鳴らし、行のあいだは少しあける。いまの列は一つだけ */
+let speaking = null;     // { lines:[{t, role}], i, after, id }
+const LOG = [];
+function speak(id, lines, after) {
+  hush(); speaking = { id, lines: lines.map(x => typeof x === "string" ? { t: x } : x), i: 0, after };
+  LOG.push({ id, n: lines.length, t: performance.now(), mode });
+  nextLine();
+}
+function nextLine() {
+  const s = speaking; if (!s) return;
+  if (s.i >= s.lines.length) { speaking = null; setTimeout(() => { if (!speaking) setSub(""); }, 1400); s.after?.(); return; }
+  const L = s.lines[s.i++]; A.lineRole = L.role ?? ""; A.lineT0 = performance.now(); A.segStart = s.i === 1 ? performance.now() : A.segStart;
+  playLine(L.t, () => { if (speaking !== s) return; setTimeout(() => { if (speaking === s) nextLine(); }, (L.gap ?? 420) / TS); });
+}
+function stopTalk() { const s = speaking; speaking = null; hush(); try { AU.pause(); } catch {} return s; }
+function replayLine() { if (!speaking) return; speaking.i = Math.max(0, speaking.i - 1); hush(); nextLine(); }
+$("replayBtn").onclick = () => { if (speaking) replayLine(); else if (lastSaid) speak("_again", [lastSaid]); };
+$("skipBtn").onclick = () => { if (!speaking) return; hush(); try { AU.pause(); } catch {} nextLine(); };
+let lastSaid = null;
+
+// ---------------------------------------------------------------- 聞く話（層）：一つだけ
+const LAYERS = APP.layers;
+let layer = LAYERS.includes(store.get(SK + "-layer", null)) ? store.get(SK + "-layer", null) : APP.layer_def;
+function chipsHTML() { return LAYERS.map(l => `<button type="button" role="radio" data-l="${l}" aria-checked="${l === layer}">${l}</button>`).join(""); }
+function drawChips() { for (const id of ["chipsA", "chipsM"]) { const el = $(id); if (!el) continue; el.innerHTML = chipsHTML(); el.querySelectorAll("button").forEach(b => b.onclick = () => setLayer(b.dataset.l)); } }
+function setLayer(l) {
+  if (!LAYERS.includes(l) || l === layer) return; layer = l; store.set(SK + "-layer", l); drawChips();
+  if (mode === "walk" && W.p && W.phase !== "end") { stopTalk(); talkPoint(W.p, true); }
+}
+
+// ---------------------------------------------------------------- 碧（VRM）
+const AOI_URL = "web/aoi.vrm", AOI_H = 1.67;
+let aoi = null, vrm = null, aoiLoading = null, aoiFail = false;
+const A = { pd: 0, ps: 0, vd: 0, vs: 0, sp: 0, yaw: 0, k: 0, ph: 0, tk: 0, hp: .1, ws: 3, wsTo: .5, wsv: 0, tl: 12, tlT: null, tlS: 1, gy: null,
+  blink: 2, bt: -1, twice: false, wan: [0, 0], wto: [0, 0], wn: 1, gaze: null, head: null, hip0: null, chunk: "", seg: null, segT: 0, lineRole: "", lineT0: 0, segStart: 0, mo: 0, pt: 0 };
+const B = { mode: "lead", t: 0, until: 0, nextBack: 0, nextGlance: 0, glance: null, focusW: null, lyaw: 0, lpitch: 0, target: null };
+function glbExt(buf) { try { const dv = new DataView(buf); if (dv.getUint32(0, true) !== 0x46546C67) return []; const j = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, dv.getUint32(12, true)))); return [...(j.extensionsUsed || []), ...(j.extensionsRequired || [])]; } catch { return []; } }
+function loadAoi() {
+  if (NO3D || vrm || aoiLoading || aoiFail) return aoiLoading;
+  return aoiLoading = (async () => {
+    const [buf, Vr, Gl] = await Promise.all([fetch(AOI_URL).then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); }), import("@pixiv/three-vrm"), import("three/addons/loaders/GLTFLoader.js")]);
+    const ext = glbExt(buf), ld = new Gl.GLTFLoader();
+    if (ext.includes("EXT_meshopt_compression")) ld.setMeshoptDecoder((await import("three/addons/libs/meshopt_decoder.module.js")).MeshoptDecoder);
+    if (ext.includes("KHR_texture_basisu")) { const { KTX2Loader } = await import("three/addons/loaders/KTX2Loader.js"); ld.setKTX2Loader(new KTX2Loader().setTranscoderPath("https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/basis/").detectSupport(renderer)); }
+    ld.register(p => new Vr.VRMLoaderPlugin(p));
+    const g = await ld.parseAsync(buf, ""); const v = g.userData.vrm; if (!v) throw new Error("VRM ではない");
+    Vr.VRMUtils.removeUnnecessaryVertices(g.scene); (Vr.VRMUtils.combineSkeletons ?? Vr.VRMUtils.removeUnnecessaryJoints)?.(g.scene); Vr.VRMUtils.rotateVRM0(v);
+    v.scene.traverse(o => { o.frustumCulled = false;if(o.isMesh){o.castShadow=true;o.receiveShadow=false;} });
+    // 薄い髪・飾りと裏面輪郭の競合を防ぐ。元のVRM、色・法線・発光は保つ。
+    for (const m of v.materials ?? []) if (m.isOutline) m.visible=false;
+    aoi = new THREE.Group(); aoi.visible = false; aoi.add(v.scene); scene.add(aoi); vrm = v;
+    // 移動に髪が置き去りにならないよう、氷川と同じ碧の座標でばねを解く。
+    for (const j of v.springBoneManager?.joints ?? []) j.center=aoi;
+    v.springBoneManager?.reset?.();
+    { const hp = v.humanoid.getNormalizedBoneNode("hips"); if (hp) A.hip0 = hp.position.clone(); }
+    windInit(v); aoiPose(0, 0); v.update(0); v.scene.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(v.scene), h = box.max.y - box.min.y, sc = h > .5 && Math.abs(h - AOI_H) / AOI_H > .02 ? AOI_H / h : 1;
+    v.scene.scale.setScalar(sc); v.scene.position.y = -box.min.y * sc;
+    A.head = v.humanoid.getRawBoneNode("head"); A.gaze = new THREE.Object3D(); scene.add(A.gaze); if (v.lookAt) v.lookAt.target = A.gaze;
+    try { aoi.visible = true; await renderer.compileAsync(aoi, camera, scene); } catch {} aoi.visible = false;
+    aoiLoading = null; if(W.p) aoiPlace(true); return vrm;
+  })().catch(e => { aoiFail = true; aoiLoading = null; console.warn("碧の姿を読み込めませんでした（声と字幕で進めます）：", e?.message ?? e); return null; });
+}
+/* 風（髪の揺れ）：《Qualium in Hikawa》第4回の作り。重力は下向きを主に、風は水平の成分だけ（0.35 まで）、ばねは 1/60 秒より細かく刻む */
+const WD = { t: rnd(0, 1000), th0: rnd(0, Math.PI * 2), g: null, joints: [], seed: Math.random() * 100 };
+function windInit(v) {
+  WD.joints = []; const js = v.springBoneManager?.joints; if (!js) return; let i = 0;
+  for (const j of js) { const nm = j.bone?.name ?? "", st = j.settings;
+    if (/Skirt/i.test(nm)) { st.dragForce = Math.max(st.dragForce, .45); st.gravityPower = Math.max(st.gravityPower, .08); st.gravityDir?.set(0, -1, 0); continue; }
+    if (!/Hair/i.test(nm)) continue;
+    const r1 = ((Math.sin(i * 12.9898 + WD.seed) * 43758.5) % 1 + 1) % 1, r2 = ((Math.sin(i * 78.233 + WD.seed) * 12543.7) % 1 + 1) % 1;
+    st.stiffness *= .95 + .1 * r2; st.dragForce = Math.max(.3, st.dragForce * (.9 + .15 * r1));
+    WD.joints.push({ j, k: .75 + .5 * r1, ph: r2 * Math.PI * 2, f: .7 + .6 * r2, d0: st.dragForce, s0: st.stiffness }); i++; }
+}
+function windTick(dt, fx, fz) {
+  if (!WD.joints.length) return;
+  WD.t += dt; const t = WD.t, k = RM ? .3 : 1;
+  const th = WD.th0 + .9 * Math.sin(t / 41) + .4 * Math.sin(t / 17 + 1.3) + .15 * Math.sin(t / 5.3);
+  const b = .06 + .04 * Math.sin(t / 23 + .5) + .02 * Math.sin(t / 7.1 + 2) * Math.sin(t / 3.3);
+  if (!WD.g && Math.random() < dt / 11) WD.g = { t0: t, dur: rnd(1, 3), amp: rnd(.08, .2), dth: rnd(-.6, .6) };
+  let e = 0, dth = 0; if (WD.g) { const u = (t - WD.g.t0) / WD.g.dur; if (u >= 1) WD.g = null; else { e = Math.sin(Math.PI * u) ** 2 * WD.g.amp; dth = WD.g.dth; } }
+  const wx = Math.cos(th + dth) * (b + e), wz = Math.sin(th + dth) * (b + e), vx = fx * A.sp / Math.max(1, TS), vz = fz * A.sp / Math.max(1, TS);
+  for (const q of WD.joints) {
+    const fl = 1 + .3 * Math.sin(t * (1.7 + q.f) + q.ph) * (.5 + e * 3) + .15 * Math.sin(t * (.53 + .2 * q.k) + q.ph * 1.7);
+    let x = (wx * q.k * fl - vx * .06) * k, z = (wz * q.k * fl - vz * .06) * k; const hm = Math.hypot(x, z);
+    if (hm > .35) { x *= .35 / hm; z *= .35 / hm; }
+    const L = Math.hypot(x, 1, z), st = q.j.settings, fast = Math.min(1, A.sp / Math.max(1, TS) / 1.8);
+    st.gravityDir.set(x / L, -1 / L, z / L); st.gravityPower = clamp(.05 + Math.min(hm, .35) * .4 + .12 * fast, .05, .25);
+    st.dragForce = Math.min(.9, q.d0 * (1 + .6 * fast)); st.stiffness = q.s0 * (1 + .6 * fast);
+  }
+}
+function vrmStep(dt) {
+  const v = vrm, sb = v.springBoneManager; if (!sb) { v.update(dt); return; }
+  v.humanoid.update(); v.lookAt?.update(dt); v.expressionManager?.update();
+  const n = Math.min(6, Math.max(1, Math.ceil(dt / (1 / 60)))), h = dt / n; for (let i = 0; i < n; i++) sb.update(h);
+  v.nodeConstraintManager?.update?.(); v.materials?.forEach(m => m.update?.(dt));
+}
+/* 体の動き：《Qualium in Hikawa》の aoiPose（足どり・呼吸・うなずき・指さし・首かしげ・まばたき・口）。腕の休め＝aoi_pose.js の写し（前腕 Y は左が負・右が正） */
+const CUR = {};
+function aoiPose(dt, sp) {
+  const live = !RM, t = performance.now() / 1000, T = {}, S = (n, x = 0, y = 0, z = 0) => { T[n] = [x, y, z]; };
+  const talk = !!speaking && !!aoi?.visible;
+  const kT = clamp((sp - .15) / .8, 0, 1); A.k += (kT - A.k) * ease(dt, 2.6); const k = A.k;
+  A.ph += 2 * Math.PI * (.45 + .35 * Math.min(sp, 2)) * dt * Math.min(1, k * 1.5);
+  const s1 = Math.sin(A.ph), c1 = Math.cos(A.ph), br = live ? Math.sin(t * 2 * Math.PI / 4.2) : 0;
+  const segT = (performance.now() - (A.segStart || 0)) / 1000;
+  A.tk += ((talk ? 1 : 0) - A.tk) * ease(dt, 3); const tk = live ? A.tk : 0;
+  const greet = live && W.phase === "greet" && talk && segT < 2 ? Math.sin(Math.min(1, segT / 2) * Math.PI) : 0;
+  const aim = B.mode === "talkObj" ? B.lyaw : 0, lt0 = (performance.now() - (A.lineT0 || 0)) / 1000;
+  const ptOn = live && talk && A.lineRole === "see" && B.mode === "talkObj" && Math.abs(aim) < 1.25 && lt0 > .4 && lt0 < 3.6;
+  A.pt += ((ptOn ? 1 : 0) - A.pt) * ease(dt, 3.5); const ptE = A.pt * A.pt * (3 - 2 * A.pt), useL = aim > .45;
+  if (live) { A.ws -= dt; if (A.ws <= 0) { A.wsTo = -A.wsTo || .5; A.ws = 4 + Math.random() * 3; } A.wsv += (A.wsTo - A.wsv) * ease(dt, 1.5);
+    A.tl -= dt; if (A.tl <= 0 && k < .4 && Math.random() < dt * .25) { A.tl = 20 + Math.random() * 10; A.tlT = 0; A.tlS = Math.random() < .5 ? 1 : -1; }
+    if (A.tlT != null) { A.tlT += dt; if (A.tlT > 2.2) A.tlT = null; } }
+  const ws = (1 - k) * A.wsv, tilt = A.tlT != null ? Math.sin(Math.min(1, A.tlT / 2.2) * Math.PI) * .14 * A.tlS : 0, ly = B.lyaw, lp = B.lpitch;
+  const hips = vrm.humanoid.getNormalizedBoneNode("hips");
+  if (hips && A.hip0) hips.position.set(A.hip0.x + (.012 * s1 * k + .018 * ws), A.hip0.y - .0025 * (1 - Math.cos(2 * A.ph)) * k * k - .0015 * (1 - k) * br, A.hip0.z);
+  S("hips", 0, .07 * s1 * k, (.035 * s1 * k + .04 * ws));
+  S("spine", .04 * k - .006 * br + .12 * greet, -.05 * s1 * k + ly * .1, -.02 * ws);
+  S("chest", -.012 * br - lp * .05 + .06 * greet, -.04 * s1 * k + ly * .2, -.015 * ws);
+  S("upperChest", -.01 * br - lp * .05, ly * .15, 0);
+  const lt = -.36 * s1 * k, rt = .36 * s1 * k, lk = k * (.06 + .62 * Math.pow(Math.max(0, c1), 1.5)) + .05 * Math.max(0, ws), rk = k * (.06 + .62 * Math.pow(Math.max(0, -c1), 1.5)) + .05 * Math.max(0, -ws);
+  S("leftUpperLeg", lt, 0, .015 + .03 * ws); S("rightUpperLeg", rt, 0, -.015 + .03 * ws); S("leftLowerLeg", lk); S("rightLowerLeg", rk);
+  S("leftFoot", -(lt + lk) * .75); S("rightFoot", -(rt + rk) * .75);
+  const gst = tk * (1 - ptE) * (1 - k * .6), gw = live ? Math.sin(t * 2 * Math.PI * .33) : 0;
+  const lUA = [.26 * s1 * k - .05 * (1 - k) - .12, 0, -1.28 + .04 * br * (1 - k)], lLA = [0, -(.26 + .14 * k + .12 * Math.max(0, -s1) * k), 0];
+  const rUA = [-.26 * s1 * k - .05 * (1 - k) - .12 - .28 * gst, 0, 1.28 - .04 * br * (1 - k) - .14 * gst], rLA = [0, .26 + .14 * k + .12 * Math.max(0, s1) * k + (.5 + .12 * gw) * gst, 0];
+  const pR = [-.15, 1.15 + aim * .6, .55], pRL = [0, .1, 0], pL = [-.15, -(1.15 - aim * .6), -.55], pLL = [0, -.1, 0], mix = (a, b, w) => a.map((v, i) => v + (b[i] - v) * w);
+  S("leftUpperArm", ...(useL ? mix(lUA, pL, ptE) : lUA)); S("leftLowerArm", ...(useL ? mix(lLA, pLL, ptE) : lLA));
+  S("rightUpperArm", ...(!useL ? mix(rUA, pR, ptE) : rUA)); S("rightLowerArm", ...(!useL ? mix(rLA, pRL, ptE) : rLA));
+  S("leftHand", .05, 0, .12 - (useL ? .12 * ptE : 0)); S("rightHand", .05 + .1 * gst * gw, 0, -.12 + (!useL ? .12 * ptE : 0));
+  const cu = .34 + .06 * k + (live ? .04 * Math.sin(t * .4) : 0);
+  for (const [f, m] of [["Index", .8], ["Middle", 1], ["Ring", 1.1], ["Little", 1.25]]) {
+    const cl = cu * m, pL2 = useL ? ptE : 0, pR2 = useL ? 0 : ptE, cL = f === "Index" ? cl * (1 - pL2) : cl + .35 * pL2, cR = f === "Index" ? cl * (1 - pR2) : cl + .35 * pR2;
+    S(`left${f}Proximal`, 0, 0, -cL); S(`left${f}Intermediate`, 0, 0, -cL * 1.15); S(`left${f}Distal`, 0, 0, -cL * .8);
+    S(`right${f}Proximal`, 0, 0, cR); S(`right${f}Intermediate`, 0, 0, cR * 1.15); S(`right${f}Distal`, 0, 0, cR * .8);
+  }
+  S("leftThumbProximal", 0, .3, -.08); S("leftThumbDistal", 0, .15, -.2); S("rightThumbProximal", 0, -.3, .08); S("rightThumbDistal", 0, -.15, .2);
+  const nod = live ? .14 * greet + (talk ? .03 * Math.max(0, Math.sin(t * 2 * Math.PI * .5)) : 0) : 0;
+  S("neck", nod * .4 - .02 * br - lp * .3, ly * .25, tilt * .4); S("head", nod * .6 - lp * .5, ly * .35, tilt * .6);
+  const r = live ? 12 : 8;
+  for (const [nme, tg] of Object.entries(T)) { const b = vrm.humanoid.getNormalizedBoneNode(nme); if (!b) continue; const c = CUR[nme] ||= [...tg]; for (let i = 0; i < 3; i++) c[i] += clamp((tg[i] - c[i]) * ease(dt, r), -.14, .14); b.rotation.set(c[0], c[1], c[2]); }
+  const voiced = !AU.paused && !AU.ended && AU.currentTime > 0 && AU.readyState >= 2;
+  let mo = 0;
+  if (live && voiced && speaking) { const c = A.chunk || "", L = speaking.lines[Math.max(0, speaking.i - 1)], v = L && VOICE[L.t];
+    let gate = 1; if (v && c) { const ci = Math.floor(AU.currentTime / v.dur * c.length) % Math.max(1, c.length); if ("、。？！「」（）『』".includes(c[ci] ?? "")) gate = 0; }
+    mo = gate * Math.max(0, Math.sin(t * 2 * Math.PI * 7.8 + 1.3 * Math.sin(t * 2.1))) * (.5 + .15 * Math.sin(t * 2 * Math.PI * 1.7)); }
+  A.mo += (mo - A.mo) * ease(dt, 28); if (A.mo < .01) A.mo = 0;
+  const em = vrm.expressionManager;
+  if (em) { if (em.getExpression?.("aa")) em.setValue("aa", A.mo);
+    const hpT = live ? Math.max(.12, .2 * tk, .45 * greet, B.mode === "back" ? .35 : 0, W.phase === "wait" ? .3 : 0, tilt ? .3 : 0) : .12;
+    A.hp += (hpT - A.hp) * ease(dt, 4); if (em.getExpression?.("happy")) em.setValue("happy", A.hp); }
+  let bv = 0;
+  if (live) { if (A.bt < 0) { A.blink -= dt; if (A.blink <= 0) { A.bt = 0; A.twice = Math.random() < .12; } }
+    else { A.bt += dt; const u = A.bt; bv = u < .08 ? u / .08 : u < .11 ? 1 : u < .24 ? 1 - (u - .11) / .13 : 0; if (u >= .24) { if (A.twice) { A.twice = false; A.bt = 0; } else { A.bt = -1; A.blink = 2.8 + Math.random() * 4.2; } } } }
+  em?.setValue("blink", Math.min(1 - A.hp * .6, bv * bv * (3 - 2 * bv)));
+  if (A.gaze) {
+    if (live) { A.wn -= dt; if (A.wn <= 0) { A.wto = [(Math.random() - .5) * .5, (Math.random() - .5) * .2]; A.wn = 1.5 + Math.random() * 3; } A.wan[0] += (A.wto[0] - A.wan[0]) * ease(dt, 3); A.wan[1] += (A.wto[1] - A.wan[1]) * ease(dt, 3); }
+    if (B.target) A.gaze.position.copy(B.target);
+    else if (talk || k < .3) A.gaze.position.copy(camera.position);
+    else { const f = A.yaw, p = aoi.position; A.gaze.position.set(p.x + Math.sin(f) * 10 + Math.cos(f) * A.wan[0] * 4, p.y + 1.4 + A.wan[1] * 3, p.z + Math.cos(f) * 10 - Math.sin(f) * A.wan[0] * 4); }
+  }
+}
+
+// ---------------------------------------------------------------- 地点のまわり（道・建物・木）
+let local = null;
+function winTex() {   /* 壁の模様：一つの階・一つの柱間（3.4 m × 3.1 m）に窓一つ（模式） */
+  const c = document.createElement("canvas"); c.width = 64; c.height = 64; const g = c.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, 64, 64); g.fillStyle = "#c9c6bf"; g.fillRect(0, 60, 64, 4);
+  g.fillStyle = "#98a3a8"; g.fillRect(14, 16, 36, 28); g.fillStyle = "#b9c2c5"; g.fillRect(14, 16, 36, 5);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+const lmat = { bld: new THREE.MeshLambertMaterial({ vertexColors: true }), wall: new THREE.MeshLambertMaterial({ vertexColors: true, map: winTex(), side: THREE.DoubleSide }), road: new THREE.MeshLambertMaterial({ vertexColors: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
+  crown: new THREE.MeshLambertMaterial({ color: 0xffffff }), trunk: new THREE.MeshLambertMaterial({ color: 0x5b4636 }) };
+const texLoader = new THREE.TextureLoader();
+function surface(name, material, key, color = true) {
+ texLoader.load("web/tex/" + name, t => { if(color)t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=2;t.wrapS=t.wrapT=THREE.RepeatWrapping;material[key]=t;material.needsUpdate=true;dirty=3; }, undefined, () => {});
+}
+lmat.crown = new THREE.MeshStandardMaterial({color:0xffffff,roughness:.86,alphaTest:.4,side:THREE.DoubleSide});
+lmat.trunk = new THREE.MeshStandardMaterial({color:0xb6a797,roughness:.94});
+lmat.wall=new THREE.MeshStandardMaterial({vertexColors:true,map:winTex(),roughness:.88,side:THREE.DoubleSide});
+lmat.bld=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.93});
+lmat.road=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4});
+surface("plaster_n.webp",lmat.wall,"normalMap",false);lmat.wall.normalScale=new THREE.Vector2(.18,.18);
+surface("asphalt_c.webp",lmat.road,"map");surface("asphalt_n.webp",lmat.road,"normalMap",false);lmat.road.normalScale=new THREE.Vector2(.35,.35);
+surface("leaf_spray.webp",lmat.crown,"map");surface("bark_zelkova.webp",lmat.trunk,"map");surface("bark_zelkova_n.webp",lmat.trunk,"normalMap",false);
+function clearLocal() { if (!local) return; scene.remove(local); local.traverse(o => { if (o.geometry) o.geometry.dispose(); }); local = null; }
+function buildLocal(p, L) {
+  clearLocal(); const G = new THREE.Group(), ox = llX(p.ll[0]), oz = llZ(p.ll[1]);
+  const H = (x, z) => heightXZ(ox + x, oz + z) ?? p.elev ?? 0;
+  // 建物：壁（窓の並びの模様）と平らな屋根。OpenStreetMap の輪郭と階数（高さの無いものは目安）
+  { const pos = [], col = [], uv = [], rp = [], rc2 = [];
+    const wall = [.9, .88, .84], roof = [.6, .58, .55], roofT = [.33, .31, .3];
+    for (const b of L.bld) {
+      const h = b[0], kind = b[1], pts = []; for (let i = 2; i < b.length; i += 2) pts.push([b[i], b[i + 1]]);
+      let base = 1e9; for (const [x, z] of pts) base = Math.min(base, H(x, z)); base -= .4; const top = base + h + .4;
+      const r0 = ((b[2] * 7.13 + b[3] * 3.7) % 1 + 1) % 1, tint = .9 + r0 * .14, warm = (r0 - .5) * .06, wc = [wall[0] * tint + warm, wall[1] * tint, wall[2] * tint - warm], rc = kind ? roofT : roof.map(c => c * (.9 + r0 * .2));
+      const fl = h < 4 ? 0 : 1; let u0 = 0;
+      for (let i = 0; i < pts.length; i++) { const [x0, z0] = pts[i], [x1, z1] = pts[(i + 1) % pts.length], L2 = Math.hypot(x1 - x0, z1 - z0), u1 = u0 + L2 / 3.4, v1 = (h + .4) / 3.1 * fl;
+        pos.push(x0, base, z0, x1, base, z1, x1, top, z1, x0, base, z0, x1, top, z1, x0, top, z0);
+        uv.push(u0, 0, u1, 0, u1, v1, u0, 0, u1, v1, u0, v1); u0 = fl ? Math.round(u1) : u1;
+        const sh = .8 + .2 * Math.abs(Math.cos(Math.atan2(z1 - z0, x1 - x0) - .6)); for (let q = 0; q < 6; q++) col.push(wc[0] * sh, wc[1] * sh, wc[2] * sh); }
+      let tri = []; try { tri = THREE.ShapeUtils.triangulateShape(pts.map(([x, z]) => new THREE.Vector2(x, z)), []); } catch {}
+      for (const [a, b2, c] of tri) for (const q of [a, c, b2]) { rp.push(pts[q][0], top, pts[q][1]); rc2.push(...rc); }
+    }
+    if (pos.length) { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals(); G.add(new THREE.Mesh(g, lmat.wall)); }
+    if (rp.length) { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(rp, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(rc2, 3)); g.computeVertexNormals(); G.add(new THREE.Mesh(g, lmat.bld)); }
+  }
+  // 道：幅のある帯（地面より少し上）
+  { const pos = [], col = [], idx = []; let vi = 0;
+    for (const r of L.road) {
+      const w = r[0], br = r[1], pts = []; for (let i = 2; i < r.length; i += 2) pts.push([r[i], r[i + 1]]);
+      const c = w <= 2.1 ? [.66, .6, .5] : w <= 3.6 ? [.52, .51, .49] : [.4, .4, .4];
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[Math.max(0, i - 1)], b2 = pts[Math.min(pts.length - 1, i + 1)], dx = b2[0] - a[0], dz = b2[1] - a[1], m = Math.hypot(dx, dz) || 1, nx = -dz / m * w / 2, nz = dx / m * w / 2;
+        const [x, z] = pts[i], y = H(x, z) + .12;
+        pos.push(x + nx, y, z + nz, x - nx, y, z - nz); col.push(...c, ...c);
+        if (i) idx.push(vi - 2, vi, vi - 1, vi - 1, vi, vi + 1); vi += 2;
+      }
+    }
+    if (pos.length) { const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
+      const uv=[];for(let i=0;i<pos.length;i+=3)uv.push(pos[i]/3,pos[i+2]/3);g.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));
+      const m = new THREE.Mesh(g, lmat.road); m.renderOrder = 1; lmat.road.side = THREE.DoubleSide; G.add(m); }
+  }
+  // 樹冠：写真の透過葉を立体的に配置。一本ごとの樹種・枝ぶりは模式。
+  { const n = L.tree.length / 3; if (n) {
+    const cg = new THREE.PlaneGeometry(1, 1, 1, 2), tg = new THREE.CylinderGeometry(.16,.26,1,7);tg.translate(0,.5,0);
+    const count=16,C=new THREE.InstancedMesh(cg,lmat.crown,n*count),Tr=new THREE.InstancedMesh(tg,lmat.trunk,n), mm=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3(),pp=new THREE.Vector3(),cc=new THREE.Color();
+    const e=new THREE.Euler();
+    for(let i=0;i<n;i++) {const x=L.tree[i*3],z=L.tree[i*3+1],k=L.tree[i*3+2],y=H(x,z),hh=9*k,rr=2.8*k;
+      q.setFromAxisAngle(_up,(x*13.1+z*7.7)%6.28);mm.compose(pp.set(x,y-.2,z),q,s.set(k,hh*.76,k));Tr.setMatrixAt(i,mm);
+      for(let j=0;j<count;j++){const a=j*2.399963+((x+z)%6),v=(j+.5)/count,r=rr*Math.sqrt(Math.max(0,1-(2*v-1)**2));
+       q.setFromEuler(e.set((v-.5)*1.2,a,.15*Math.sin(a)));mm.compose(pp.set(x+Math.cos(a)*r*.65,y+hh*.47+v*rr*1.8,z+Math.sin(a)*r*.65),q,s.set(rr*1.5,rr*1.2,1));C.setMatrixAt(i*count+j,mm);
+       cc.setHSL(.25+v*.035,.16,.48+v*.11);C.setColorAt(i*count+j,cc);
+      }
+    }
+    C.instanceMatrix.needsUpdate=true;C.instanceColor.needsUpdate=true;Tr.instanceMatrix.needsUpdate=true;G.add(C,Tr);
+  }}
+  G.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});G.position.set(ox, 0, oz); scene.add(G); local = G; dirty = 3;
+}
+const _up = new THREE.Vector3(0, 1, 0);
+
+// ---------------------------------------------------------------- 歩く（道すじの座標：道のり s・横 l）
+const W = { p: null, P: null, cum: null, len: 0, s: 0, s0: 0, sEnd: 0, v: 0, phase: "", walking: false, userPaused: false, lookYaw: 0, lookPitch: 0, dragging: false, dragEnd: 0, camYaw: null, ox: 0, oz: 0 };
+function setPath(p) {
+  const ox = llX(p.ll[0]), oz = llZ(p.ll[1]); W.ox = ox; W.oz = oz;
+  W.P = p.walk.map(([x, z]) => [ox + x, oz + z]); W.cum = [0];
+  for (let i = 1; i < W.P.length; i++) W.cum.push(W.cum[i - 1] + Math.hypot(W.P[i][0] - W.P[i - 1][0], W.P[i][1] - W.P[i - 1][1]));
+  W.len = W.cum[W.cum.length - 1];
+}
+function pathAt(s) {
+  const P = W.P, c = W.cum, n = P.length; s = clamp(s, 0, W.len);
+  let i = 0, lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (c[m] <= s) lo = m; else hi = m; } i = lo;
+  const a = P[i], b = P[Math.min(n - 1, i + 1)], L = (c[i + 1] ?? c[i]) - c[i] || 1, t = (s - c[i]) / L;
+  /* 向きは前後 6 m の点から（角でも跳ばない） */
+  const s1 = clamp(s - 6, 0, W.len), s2 = clamp(s + 6, 0, W.len), pa = rawAt(s1), pb = rawAt(s2); let fx = pb[0] - pa[0], fz = pb[1] - pa[1]; const m = Math.hypot(fx, fz) || 1;
+  return { x: a[0] + (b[0] - a[0]) * t, z: a[1] + (b[1] - a[1]) * t, fx: fx / m, fz: fz / m };
+}
+function rawAt(s) { const P = W.P, c = W.cum; let i = 0; while (i < P.length - 2 && c[i + 1] < s) i++; const a = P[i], b = P[i + 1] ?? a, L = (c[i + 1] ?? c[i]) - c[i] || 1, t = clamp((s - c[i]) / L, 0, 1); return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
+const toW = (s, l) => { const p = pathAt(s); return { x: p.x - p.fz * l, z: p.z + p.fx * l, fx: p.fx, fz: p.fz }; };   /* l＞0＝進む向きの右 */
+function estTalk(p) {   /* 選んだ層の話を全部するのにかかる秒（声の長さ。無ければ字数から） */
+  const ls = planLines(p, layer); return ls.reduce((a, l) => a + (VOICE[l.t]?.dur ?? l.t.length / 6.5) + .45, 0);
+}
+function planLines(p, L) {
+  const T = p.talk, body = T.L[L]?.length ? T.L[L] : [APP.thin.replace("{L}", L), ...T.L["道"]];
+  return [...body.map((t, i) => ({ t, role: i === 0 ? "see" : "" })), ...T.look.map(t => ({ t, gap: 900 })), ...T.end.map(t => ({ t, gap: 900 })), ...APP.bye.map(t => ({ t }))];
+}
+
+// ---------------------------------------------------------------- 選ぶ → 降りる → 歩く
+let started = false, flying = null, prefetched = new Map();
+function prefetchPoint(p) {
+  if (prefetched.has(p.id)) return prefetched.get(p.id);
+  const [lon, lat] = p.ll, dl = .006;
+  const pr = Promise.all([fetch(p.local).then(r => r.ok ? r.json() : null).catch(() => null), ensureDem(lon - dl, lat - dl, lon + dl, lat + dl, 14)]).then(([L]) => L);
+  prefetched.set(p.id, pr); return pr;
+}
+function pick(p) {
+  if (flying) return;
+  if (!started) begin(true, true);
+  if (mode === "walk") { ended(); }
+  stopTalk(); setSub(""); $("endbar").hidden = true; $("start").hidden = true;
+  fly(p);
+}
+function railFor(p, s0) {   /* 俯瞰から降りる道すじ（手前の線＋歩く道の s0 まで）。点は [x, z] */
+  const R = p.appr.map(([lon, lat]) => [llX(lon), llZ(lat)]);
+  setPath(p); for (const q of W.P) { R.push(q); if (W.cum[W.P.indexOf(q)] >= s0) break; }
+  const c = [0]; for (let i = 1; i < R.length; i++) c.push(c[i - 1] + Math.hypot(R[i][0] - R[i - 1][0], R[i][1] - R[i - 1][1]));
+  const at = d => { d = clamp(d, 0, c[c.length - 1]); let i = 0; while (i < R.length - 2 && c[i + 1] < d) i++; const L = c[i + 1] - c[i] || 1, t = clamp((d - c[i]) / L, 0, 1); return [lerp(R[i][0], R[i + 1][0], t), lerp(R[i][1], R[i + 1][1], t)]; };
+  return { at, len: c[c.length - 1] };
+}
+async function fly(p) {
+  mode = "fly"; document.body.classList.add("walk"); $("upBtn").hidden = false; $("groups").hidden = true;
+  $("where").textContent = `${p.label ?? p.group}　${p.name}`;
+  const Lp = prefetchPoint(p); let groundReady=false;
+  const groundP = primeGround(p).then(()=>{groundReady=true;}); loadAoi();
+  setPath(p);
+  const need = estTalk(p) + 8;     /* 話し終わるころに地点に着くように、歩きはじめを決める（街道は宿の 50 m 先まで・札所は寺の前まで） */
+  const endS = W.len; W.s0 = clamp(endS - 22 - need * .95, 0, Math.max(0, endS - 60)); W.sEnd = endS - 2;
+  const rail = railFor(p, W.s0 + 1);
+  const P0 = camera.position.clone(), L0 = new THREE.Vector3(); camera.getWorldDirection(L0); L0.multiplyScalar(Math.max(500, camAlt())).add(P0);
+  const R0 = rail.at(0), D = Math.hypot(R0[0] - P0.x, R0[1] - P0.z), alt0 = Math.max(1800, rail.len * .45);
+  const T = RM ? 0 : clamp(6 + Math.log2(1 + D / 4000) * .9, 6.5, 12) * (MOB ? 1 : 1);
+  W.p = p; W.phase = "wait"; W.walking = false; W.v = 0; W.s = W.s0; W.camYaw = null; W.lookYaw = 0; W.lookPitch = 0;
+  // 碧は先に来て、待っている（歩きはじめの 6 m 先で、来る人のほうを向いて）
+  Lp.then(L => { if (W.p !== p) return; if (L) buildLocal(p, L); aoiPlace(true); });
+  if (RM) { $("fade").classList.add("on"); await new Promise(r => setTimeout(r, 380)); }
+  const t0 = performance.now(); let held=0,lastFlight=t0;
+  await new Promise(res => {
+    flying = { p, step() {
+      const now=performance.now(),elapsed=now-lastFlight;lastFlight=now;
+      if(!groundReady && (now-t0-held)/1000/Math.max(.1,T)*TS>.65)held+=elapsed;
+      const u = T ? clamp((now-t0-held) / 1000 / T * TS, 0, 1) : (groundReady?1:0), uu = u < .5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
+      const sg = sstep(.12, 1, uu), b = sstep(0, .5, uu);
+      const alt = lerp(1.62, alt0, (1 - sg) ** 2.3), rp = rail.at(sg * rail.len);
+      EX = exFor(Math.max(alt, lerp(camAlt(), alt, b)));
+      const gy = (heightXZ(rp[0], rp[1]) ?? p.elev) * EX;
+      const hump = 4 * b * (1 - b) * clamp(D * .3, 0, 50000);
+      const cx = lerp(P0.x, rp[0], b), cz = lerp(P0.z, rp[1], b), cy = lerp(P0.y, gy + alt, b) + hump;
+      const la = Math.max(25, alt * 1.6), ap = rail.at(Math.min(rail.len + 200, sg * rail.len + la)); let ax = ap[0], az = ap[1];
+      if (sg * rail.len + la > rail.len) { const q = pathAt(W.s0 + (sg * rail.len + la - rail.len)); ax = q.x; az = q.z; }
+      const ay = (heightXZ(ax, az) ?? p.elev) * EX + (alt < 30 ? 1.4 : 0);
+      camera.position.set(cx, Math.max(cy, (heightXZ(cx, cz) ?? 0) * EX + 1.5), cz);
+      camera.lookAt(lerp(L0.x, ax, b), lerp(L0.y, ay, b), lerp(L0.z, az, b));
+      dirty = 2;
+      if (u >= 1) { flying = null; res(); }
+    } };
+  });
+  $("fade").classList.remove("on");
+  await Promise.all([Lp,groundP]); if (W.p !== p) return; mode = "walk"; lod();
+  arrive(p);
+}
+function arrive(p) {
+  EX = 1; W.phase = "greet"; aoiPlace(false); walkLbl();
+  speak("greet:" + p.id, p.talk.greet.map(t => ({ t, gap: 380 })), () => { if (W.p !== p) return; W.phase = "walk"; if (!W.userPaused) W.walking = true; walkLbl(); talkPoint(p); });
+}
+function talkPoint(p, layerChanged = false) {
+  const ls = planLines(p, layer); if (layerChanged) ls.unshift({ t: APP.layer_intro[layer] });
+  speak("talk:" + p.id + ":" + layer, ls, () => { if (W.p !== p) return; W.phase = "end"; ended(true); });
+}
+function ended(show) {
+  if (show) { const i = PTS.indexOf(W.p), nx = PTS[(i + 1) % PTS.length]; $("endNext").textContent = `次の${APP.kind}へ：${nx.short}`; $("endNext").onclick = () => pick(nx); $("endbar").hidden = false; }
+}
+$("endUp").onclick = () => goUp();
+$("upBtn").onclick = () => goUp();
+async function goUp() {
+  if (flying || mode !== "walk") return;
+  stopTalk(); setSub(""); $("endbar").hidden = true; W.walking = false; W.phase = ""; walkLbl();
+  const p = W.p, P0 = camera.position.clone(), L0 = new THREE.Vector3(); camera.getWorldDirection(L0); L0.multiplyScalar(20).add(P0);
+  const to = { x: llX(p.ll[0]), z: llZ(p.ll[1]), dist: MOB ? 42000 : 32000, pitch: .95, yaw: Math.atan2(P0.x - llX(p.ll[0]), P0.z - llZ(p.ll[1])) };
+  if (!isFinite(to.yaw)) to.yaw = 0;
+  mode = "fly"; const T = RM ? 0 : 3.8, t0 = performance.now();
+  if (RM) $("fade").classList.add("on");
+  await new Promise(res => { flying = { step() {
+    const u = T ? clamp((performance.now() - t0) / 1000 / T * TS, 0, 1) : 1, k = u < .5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
+    V.x = to.x; V.z = to.z; V.yaw = to.yaw; V.pitch = lerp(.15, to.pitch, k); V.dist = Math.exp(lerp(Math.log(30), Math.log(to.dist), k));
+    EX = exFor(V.dist * Math.sin(V.pitch)); const P1 = new THREE.Vector3(); placeOver(); P1.copy(camera.position);
+    const w = sstep(0, .35, u); camera.position.lerpVectors(P0, P1, w); camera.lookAt(lerp(L0.x, V.x, w), lerp(L0.y, groundAt(V.x, V.z), w), lerp(L0.z, V.z, w)); dirty = 2;
+    if (u >= 1) { flying = null; res(); } } }; });
+  $("fade").classList.remove("on");
+  mode = "over"; W.p = null; document.body.classList.remove("walk"); $("upBtn").hidden = true; $("where").textContent = ""; if (APP.groups) $("groups").hidden = false;
+  if (aoi) aoi.visible = false; clearLocal(); groundFocus=null;for(const n of nodes.values())n.pinned=false;
+  speak("again", APP.again);
+}
+
+// ---------------------------------------------------------------- 碧の置き場所と歩み
+const F_AHEAD = () => MOB ? 3.3 : 2.9, LAT = () => MOB ? .95 : 1.15;
+function aoiPlace(waiting) {
+  if (!vrm || !W.P) return;
+  if (waiting) { A.pd = W.s0 + 7; A.ps = .3; A.vd = 0; A.vs = 0; A.sp = 0; const w = toW(A.pd, A.ps); A.yaw = Math.atan2(-w.fx, -w.fz); A.gy = null; vrm.springBoneManager?.reset?.(); }
+}
+function aoiTick(dt) {
+  if (!vrm || !W.P || !W.p) { if (aoi) aoi.visible = false; return; }
+  const alt = camAlt(); if (alt > 900 || !local) { aoi.visible = false; return; }
+  aoi.visible = true;
+  // 目標：見る人の斜め前（待っているあいだは、その場で）
+  let td = A.pd, ts = A.ps;
+  if (W.phase === "walk" || W.phase === "end") { td = Math.min(W.s + F_AHEAD(), W.len - .5); ts = LAT(); }
+  const w = 3.2, n = Math.max(1, Math.ceil(dt / .02)), h = dt / n, amax = 1.3 * Math.max(1, TS * TS), vmax = 1.7 * Math.max(1, TS);
+  for (let i = 0; i < n; i++) {
+    const ad = clamp(w * w * (td - A.pd) + 2 * w * ((W.phase === "walk" ? W.v : 0) - A.vd), -amax, amax), as = clamp(w * w * (ts - A.ps) - 2 * w * A.vs, -amax * .6, amax * .6);
+    A.vd = clamp(A.vd + ad * h, -vmax, vmax); A.vs = clamp(A.vs + as * h, -1.2, 1.2); A.pd += A.vd * h; A.ps += A.vs * h;
+  }
+  const wp = toW(A.pd, A.ps);
+  const gy = heightXZ(wp.x, wp.z) ?? W.p.elev; A.gy = A.gy == null || Math.abs(A.gy - gy) > 2 ? gy : A.gy + (gy - A.gy) * ease(dt, 8);
+  const sp = Math.hypot(A.vd, A.vs); A.sp += (sp - A.sp) * ease(dt, 5);
+  const cam = camera.position, toCam = Math.atan2(cam.x - wp.x, cam.z - wp.z);
+  const moveYaw = Math.atan2(A.vd * wp.fx - A.vs * wp.fz, A.vd * wp.fz + A.vs * wp.fx);
+  behave(dt, wp);
+  let fy;
+  if (A.sp > .35) fy = moveYaw;
+  else if (B.focusW && B.mode === "talkObj") fy = A.yaw + clamp(wrapA(Math.atan2(B.focusW.x - wp.x, B.focusW.z - wp.z) - A.yaw), -1.6, 1.6) * .7;
+  else if (W.phase === "wait" || W.phase === "greet" || speaking) fy = toCam;
+  else fy = A.yaw;
+  A.yaw += clamp(wrapA(fy - A.yaw) * ease(dt, 4), -1.2 * dt, 1.2 * dt);
+  aoi.position.set(wp.x, A.gy, wp.z); aoi.rotation.set(0, A.yaw, 0);
+  if (A.sp * dt > 3) vrm.springBoneManager?.reset?.();
+  windTick(dt, wp.fx, wp.fz); aoiPose(dt, A.sp / Math.max(1, TS)); vrmStep(dt);
+}
+function behave(dt, wp) {
+  const now = performance.now(), cam = camera.position;
+  B.focusW = null;
+  if (speaking && A.lineRole === "see") { const ox = W.ox, oz = W.oz, gy = (heightXZ(ox, oz) ?? W.p.elev) + 3; B.focusW = new THREE.Vector3(ox, gy, oz); }
+  let m = B.mode;
+  if (B.focusW) m = "talkObj";
+  else if (m === "back" || m === "glance") { if (now > B.until) m = "lead"; }
+  else m = "lead";
+  if (m === "lead" && W.phase === "walk" && !RM && A.sp < 1.4) {
+    if (!B.nextBack) { B.nextBack = now + rnd(14000, 26000); B.nextGlance = now + rnd(6000, 12000); }
+    if (now > B.nextBack) { m = "back"; B.until = now + rnd(1200, 2000); B.nextBack = now + rnd(20000, 40000); }
+    else if (now > B.nextGlance) { m = "glance"; B.until = now + rnd(1500, 3000); B.nextGlance = now + rnd(8000, 18000);
+      const w = toW(A.pd + rnd(4, 14), (Math.random() < .5 ? -1 : 1) * rnd(5, 9)); B.glance = new THREE.Vector3(w.x, (A.gy ?? 0) + rnd(2, 7), w.z); }
+  }
+  if (m !== B.mode) { B.mode = m; B.t = 0; } else B.t += dt;
+  let ty = 0, tp = 0, st = 0, target = null;
+  if (m === "talkObj" && B.focusW) { target = B.focusW; st = 1; }
+  else if (m === "glance" && B.glance) { target = B.glance; st = .85; }
+  else if (m === "back" || W.phase === "greet" || W.phase === "wait") { target = cam; st = .9; }
+  if (target) { const dx = target.x - wp.x, dz = target.z - wp.z, dy = target.y - ((A.gy ?? 0) + 1.5); ty = clamp(wrapA(Math.atan2(dx, dz) - A.yaw), -1.5, 1.5); tp = clamp(Math.atan2(dy, Math.hypot(dx, dz)), -.4, .5); }
+  const r = RM ? 2.5 : 4.5; B.lyaw += (ty * st - B.lyaw) * ease(dt, r); B.lpitch += (tp * st - B.lpitch) * ease(dt, r); B.target = target;
+}
+function walkTick(dt) {
+  if (mode !== "walk" || !W.P) return;
+  const talkV = speaking ? .95 : 1.25, want = W.walking && W.s < W.sEnd ? talkV : 0;
+  W.v += (want * TS - W.v) * ease(dt, 2.2); W.s = Math.min(W.sEnd, W.s + W.v * dt);
+  if (W.s >= W.sEnd - .05 && W.walking) { W.walking = false; walkLbl(); }
+  // 目：道の上 1.6 m。進む向きを見て、碧が画面に入るよう少し右へ。ドラッグで見回せる（2.5 秒で戻る）
+  const p = pathAt(W.s), gy = heightXZ(p.x, p.z) ?? W.p.elev, eyeY = gy + 1.6;
+  let target = Math.atan2(-p.fx, -p.fz) - (MOB ? .2 : .1);
+  if (W.phase === "greet") target = Math.atan2(p.x - aoi?.position.x, p.z - aoi?.position.z) || target;
+  if (W.camYaw == null) W.camYaw = target;
+  W.camYaw += wrapA(target - W.camYaw) * ease(dt, 2.2);
+  if (aoi?.visible) {   /* 碧の頭が画面の横 15〜85% に入るよう、ゆっくり寄せる */
+    const dx = aoi.position.x - p.x, dz = aoi.position.z - p.z;
+    if (dx * dx + dz * dz > .5) { const toA = Math.atan2(-dx, -dz), off = wrapA(toA - W.camYaw), hf = Math.atan(Math.tan(camera.fov * Math.PI / 360) * camera.aspect), lim = Math.atan(.62 * Math.tan(hf));
+      if (Math.abs(off) > lim) W.camYaw += (off - Math.sign(off) * lim) * ease(dt, 4); }
+  }
+  if (!W.dragging && performance.now() - W.dragEnd > 2500) { W.lookYaw *= 1 - ease(dt, 1.5); W.lookPitch *= 1 - ease(dt, 1.5); }
+  const yaw = W.camYaw + W.lookYaw, pitch = (MOB ? -.07 : -.05) + W.lookPitch;
+  camera.position.set(p.x, eyeY, p.z);
+  camera.lookAt(p.x - Math.sin(yaw) * Math.cos(pitch) * 10, eyeY + Math.sin(pitch) * 10, p.z - Math.cos(yaw) * Math.cos(pitch) * 10);
+  dirty = 2;
+}
+function walkLbl() { const b = $("walkBtn"); b.hidden = mode !== "walk" || W.phase === "greet" || W.phase === "wait"; b.textContent = W.walking ? "止まる" : "歩く"; b.setAttribute("aria-pressed", String(!W.walking)); }
+$("walkBtn").onclick = () => { W.walking = !W.walking; W.userPaused = !W.walking; walkLbl(); };
+
+// ---------------------------------------------------------------- はじめる
+$("lead").textContent = APP.desc;
+function begin(snd, quiet = false) {
+  if (started) return; started = true; soundOn = snd; store.set(SK + "-sound", snd); audioUnlocked = true; sndLabel();
+  try { AU.src = "data:audio/mp4;base64,"; } catch {}
+  $("start").hidden = true; document.body.classList.add("started");
+  if (APP.groups) $("groups").hidden = false;
+  if (!quiet) speak("intro", APP.intro);
+  setTimeout(loadAoi, 1500);
+}
+$("goBtn").onclick = () => begin(true);
+$("goMute").onclick = () => begin(false);
+if (APP.groups) $("groups").innerHTML = APP.groups.map((g, i) => `<button type="button" data-g="${i}"><i style="background:${esc(g.color)}"></i>${esc(g.name)}</button>`).join("") + `<button type="button" data-g="all">ぜんぶ</button>`;
+$("groups").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || mode !== "over") return; frameBox(b.dataset.g === "all" ? APP.bbox : APP.groups[+b.dataset.g].bbox); });
+
+// ---------------------------------------------------------------- メニュー
+function menuHTML() {
+  const c = APP.credit;
+  return `<div class="mh"><b>メニュー</b><button class="ib" id="menuX" aria-label="閉じる">×</button></div>
+  <h2>聞く話（一つ）</h2><div class="chips" id="chipsM" role="radiogroup" aria-label="聞く話（一つ）"></div>
+  <h2>見る</h2><div class="row">${mode === "walk" ? `<button id="mUp">上から見る</button>` : ""}<button id="bigBtn" aria-pressed="${document.body.classList.contains("big")}">字幕の文字を大きく</button></div>
+  <h2>行ける${esc(APP.kind)}</h2><div class="row">${PTS.map((p, i) => `<button data-pi="${i}">${esc(p.label ?? p.group)} ${esc(p.name)}</button>`).join("")}</div>
+  <h2>碧について</h2><p>${esc(c.aoi)}</p>
+  <h2>動かし方</h2><p>${esc(APP.kind)}の印を押すと、そこへ降りていきます。上から見ているときは、ドラッグで動かし、ピンチ（ホイール）で寄ったり離れたりできます。2 本指（右ドラッグ）で、まわせます。歩いているときは、ドラッグで見回せます。</p>
+  ${c.manner ? `<h2>訪ねるとき</h2><p>${esc(c.manner)}</p>` : ""}
+  ${APP.circuits ? `<h2>三つの輪</h2>${APP.circuits.map(ci => `<p><small>${esc(ci.name)}：${ci.facts.map(esc).join(" ")}</small></p><ul>${ci.links.map(l => `<li><small><a href="${esc(l.u)}" target="_blank" rel="noopener">${esc(l.t)}</a></small></li>`).join("")}</ul>`).join("")}` : ""}
+  <h2>出典・クレジット</h2><p><small>${esc(c.map)}</small></p><p><small>${esc(c.osm)}</small></p><p><small>声：${esc(c.voice)}</small></p><p><small>${esc(c.facts)}</small></p>
+  <ul>${APP.sources.map(s => `<li><small><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a></small></li>`).join("")}</ul>
+  ${APP.hikawa ? `<h2>関連</h2><p><small><a href="${esc(APP.hikawa)}" target="_blank" rel="noopener">氷川幽玄〜Ghosts of Hikawa〜</a></small></p>` : ""}
+  <p><small>この端末に覚えるのは、選んだ話・音・文字の大きさだけです。位置は使いません。表示：three.js・@pixiv/three-vrm。mitsulab</small></p>`;
+}
+function openMenu(on) {
+  const m = $("menu"); m.hidden = !on; $("menuBtn").setAttribute("aria-expanded", String(on)); if (!on) return;
+  m.innerHTML = menuHTML(); drawChips();
+  $("menuX").onclick = () => openMenu(false); $("bigBtn").onclick = toggleBig;
+  $("mUp") && ($("mUp").onclick = () => { openMenu(false); goUp(); });
+  m.querySelectorAll("[data-pi]").forEach(b => b.onclick = () => { openMenu(false); pick(PTS[+b.dataset.pi]); });
+}
+$("menuBtn").onclick = () => openMenu($("menu").hidden);
+addEventListener("keydown", e => { if (e.key === "Escape") openMenu(false); });
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.remove("on"); void el.offsetWidth; el.classList.add("on"); }
+
+// ---------------------------------------------------------------- まわす
+let lastF = performance.now(), lodT = 0; const frameMS = 1000 / 30;
+function loop(now) {
+  requestAnimationFrame(loop);
+  if (document.hidden || NO3D) { lastF = now; return; }
+  const elapsed = now - lastF; if (elapsed < frameMS - .4) return;
+  const dt = Math.min(.1, Math.max(0, elapsed / 1000)); lastF = now - elapsed % frameMS;
+  if (flying) flying.step();
+  else if (mode === "over") { EX = exFor(V.dist * Math.sin(V.pitch)); placeOver(); }
+  walkTick(dt);
+  terrain.scale.y = EX; overlay.scale.y = EX;
+  camera.updateMatrixWorld(); updClip();
+  sun.position.set(camera.position.x-45,camera.position.y+80,camera.position.z+35);sun.target.position.set(camera.position.x,camera.position.y-1.6,camera.position.z-8);sun.target.updateMatrixWorld();renderer.shadowMap.enabled=mode!=="over";
+  lodT -= dt; if (lodT <= 0 || dirty) { lod(); lodT = .12; }
+  try { aoiTick(dt); } catch (e) { console.warn("aoi", e); vrm = null; aoiFail = true; if (aoi) aoi.visible = false; }
+  marksTick();
+  const busy = loadingN > 0 || Q.length || inflight || mode !== "over" || !!speaking || W.dragging;
+  if (dirty > 0 || busy) {
+    // 地理座標は広域のまま管理し、GPUへ渡す瞬間だけ視点を原点にする。
+    // 数十kmの座標で髪・顔の薄い面をスキニングする際の丸め誤差を防ぐ。
+    const rx=camera.position.x,rz=camera.position.z;
+    scene.position.set(-rx,0,-rz);camera.position.x=0;camera.position.z=0;camera.updateMatrixWorld();
+    renderer.render(scene,camera);
+    scene.position.set(0,0,0);camera.position.x=rx;camera.position.z=rz;
+    scene.updateMatrixWorld(true);camera.updateMatrixWorld();
+    dirty = Math.max(0,dirty-1);
+  }
+}
+if (!NO3D) { initRoots(); placeOver(); requestAnimationFrame(loop); }
+else { $("lead").textContent = "この端末では 3D の地形を表示できませんでした。メニュー（≡）の「行ける" + APP.kind + "」から選ぶと、碧の話だけを聞けます。"; }
+drawChips(); sndLabel(); walkLbl();
+setSub("");
+$("english-name").textContent=APP.title==="街道幽玄"?"Ghosts of Kaido":"";
+
+// ---------------------------------------------------------------- 確かめ用（画面の操作には使わない）
+window.__q = { get mode() { return mode; }, get W() { return W; }, get A() { return A; }, get V() { return V; }, LOG, PTS, pick, goUp, begin, setLayer, get layer() { return layer; },
+  get speaking() { return speaking?.id ?? null; }, get EX() { return EX; }, camAlt, get live() { return live; }, get loading() { return loadingN + Q.length + inflight; },
+  get aoiVis() { return !!aoi?.visible; }, get aoiFail() { return aoiFail; }, get local() { return !!local; }, get renderInfo(){ return {calls:renderer?.info.render.calls,triangles:renderer?.info.render.triangles,frames:renderer?.info.render.frame}; }, get missingPhotoTiles(){return [...nodes.values()].filter(n=>n.mesh?.visible&&!n.mesh.material.map).length;}, get inheritedPhotoTiles(){return [...nodes.values()].filter(n=>n.mesh?.visible&&n.photoSource==="inherited").length;}, get photoTiles(){return [...nodes.values()].filter(n=>n.mesh?.visible&&n.mesh.material.map).length;},
+  floorProbe(){const ray=new THREE.Raycaster(new THREE.Vector3(camera.position.x,10000,camera.position.z),new THREE.Vector3(0,-1,0));const hits=ray.intersectObjects([...nodes.values()].filter(n=>n.mesh?.visible).map(n=>n.mesh));return {dem:heightXZ(camera.position.x,camera.position.z),camera:camera.position.toArray(),surface:hits[0]?.point.y,missing:this.missingPhotoTiles};},
+  aoiDist() { if (!aoi) return null; const e = camera.position, p = aoi.position; return +Math.hypot(p.x - e.x, p.z - e.z).toFixed(2); },
+  headBox() { if (!A.head || !aoi?.visible) return null; const v = A.head.getWorldPosition(new THREE.Vector3()).project(camera); return { x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight, z: v.z }; },
+  set TS(v) { TS = v; }, get TS() { return TS; } };
 </script>
 </body>
 </html>
